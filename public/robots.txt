@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://waitlist.quantara.tech/sitemap.xml

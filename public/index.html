@@ -1,0 +1,909 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quantara Devnet-0 Waitlist — Be a Founding Member</title>
+  <meta name="description" content="Join the Quantara Devnet-0 waitlist for early faucet access to QTR (testnet), priority onboarding, and Founding Member recognition." />
+  <meta property="og:title" content="Quantara Devnet-0 Waitlist — Be a Founding Member">
+  <meta property="og:description" content="6-second blocks • SS58=73 • 12 decimals • Post-quantum ready. Join the waitlist for faucet & wallet access.">
+  <meta property="og:image" content="/assets/og-image.png">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#0a0b0d">
+  <link rel="icon" href="/assets/favicon.ico" />
+  <link rel="preconnect" href="https://challenges.cloudflare.com" />
+  <link rel="prefetch" href="/wallet/" as="document">
+  <link rel="prefetch" href="/faucet/" as="document">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Cloudflare Turnstile (human check) -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { qbg:'#0a0b0d', qpanel:'#101217', qline:'#191e25', qgold:'#f1c46b', qmuted:'#9aa0a6', qgreen:'#8BE7A1' },
+          boxShadow: { glow:'0 0 0 1px rgba(241,196,107,.18), 0 18px 60px rgba(241,196,107,.10)' }
+        }
+      }
+    }
+  </script>
+  <style>
+    .bg-grid{
+      background-image:
+        radial-gradient(1000px 500px at 80% -10%, rgba(241,196,107,.10), transparent 60%),
+        radial-gradient(800px 400px at -10% 10%, rgba(241,196,107,.06), transparent 60%),
+        linear-gradient(to bottom, rgba(241,196,107,.05) 1px, transparent 1px),
+        linear-gradient(to right,  rgba(241,196,107,.05) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 64px 64px, 64px 64px;
+      background-position: center;
+    }
+    .frame:before,.frame:after{content:"";position:absolute;inset:12px;border:1px solid rgba(241,196,107,.22);border-radius:14px;pointer-events:none}
+    .frame:after{inset:28px;border-color:rgba(241,196,107,.12)}
+    .gold-line{height:1px;background:linear-gradient(to right,transparent,rgba(241,196,107,.6),transparent)}
+    .chip{border:1px solid #191e25;background:rgba(255,255,255,.03)}
+    .pulse{animation:pulseGlow 2.2s ease-in-out infinite}
+    @keyframes pulseGlow{0%,100%{box-shadow:0 0 0 0 rgba(241,196,107,.25)}50%{box-shadow:0 0 0 8px rgba(241,196,107,.02)}}
+    :focus-visible { outline: 2px solid #f1c46b; outline-offset: 2px; border-radius: 8px; }
+    .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+    .skip-link:focus{position:fixed;left:1rem;top:1rem;width:auto;height:auto;padding:.5rem .75rem;background:#f1c46b;color:#000;border-radius:.5rem;z-index:50}
+
+    /* Preview lock styles */
+    .preview-card{position:relative;overflow:hidden}
+    .preview-ui{filter:grayscale(1);opacity:.6;pointer-events:none;user-select:none}
+    .locker{
+      position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+      background:linear-gradient(180deg,rgba(10,11,13,.35),rgba(10,11,13,.65));
+      border:1px solid rgba(241,196,107,.18);text-align:center;gap:.5rem
+    }
+    .locker .lock-icon{width:42px;height:42px;color:#f1c46b;opacity:.95}
+    .locker small{color:#9aa0a6}
+    [data-live="1"] .preview-ui{filter:none;opacity:1;pointer-events:auto;user-select:auto}
+    [data-live="1"] .locker{display:none}
+    .is-disabled{opacity:.85}
+    .is-disabled:hover{opacity:1}
+
+    /* Code blocks */
+    pre{background:rgba(255,255,255,.03);border:1px solid #191e25}
+    .copy-btn{position:absolute;top:.5rem;right:.5rem}
+
+    /* Rewards chart */
+    .bar{height:12px;border-radius:9999px;background:linear-gradient(90deg, rgba(241,196,107,.95), rgba(241,196,107,.55));box-shadow:0 4px 20px rgba(241,196,107,.15) inset;width:0}
+    .bar-wrap{background:rgba(255,255,255,.05);border:1px solid #191e25;border-radius:9999px;overflow:hidden}
+  </style>
+
+  <!-- SEO JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context":"https://schema.org",
+    "@type":"WebSite",
+    "name":"Quantara",
+    "url":"https://yourdomain.tld/",
+    "description":"Join the Quantara Devnet-0 waitlist for early faucet access and wallet preview.",
+    "potentialAction":{"@type":"SubscribeAction","target":"https://yourdomain.tld/#join"}
+  }
+  </script>
+</head>
+<body class="bg-qbg text-white antialiased">
+
+  <!-- Announcement bar -->
+  <div id="announce" class="w-full bg-qgold text-black text-sm text-center py-2">
+    🚀 Devnet-0 unlocks in <span id="bar-countdown">T-72h</span>.
+    <a href="#join" class="underline font-semibold">Get early access</a>
+  </div>
+
+  <!-- Skip to content (a11y) -->
+  <a href="#main" class="skip-link sr-only focus:not-sr-only">Skip to main content</a>
+
+  <!-- Sticky mobile CTA -->
+  <a href="#join" class="sm:hidden fixed bottom-4 left-4 right-4 z-30 rounded-xl bg-qgold text-black font-semibold py-3 text-center shadow-glow pulse" aria-label="Join the waitlist">
+    Join the Waitlist
+  </a>
+
+  <!-- Header -->
+  <header class="sticky top-0 z-20 backdrop-blur bg-qbg/70 border-b border-qline" role="banner">
+    <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between">
+      <a href="/" class="flex items-center gap-2" aria-label="Quantara home">
+        <svg width="24" height="24" viewBox="0 0 24 24" class="text-qgold" fill="none" aria-hidden="true">
+          <circle cx="11" cy="11" r="7.5" stroke="currentColor" stroke-width="2"/>
+          <path d="M17 17L22 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="text-sm tracking-[0.35em] text-qgold">QUANTARA</span>
+      </a>
+      <nav class="hidden sm:flex items-center gap-6 text-sm text-qmuted" role="navigation" aria-label="Primary">
+        <a href="#wallet" class="hover:text-white">Wallet + Faucet</a>
+        <a href="#preview" class="hover:text-white">Preview</a>
+        <a href="#build" class="hover:text-white">Start building</a>
+        <a href="#rewards" class="hover:text-white">Rewards</a>
+        <a href="#why" class="hover:text-white">Why join</a>
+        <a href="#how" class="hover:text-white">How it works</a>
+        <a href="#timeline" class="hover:text-white">Timeline</a>
+        <a href="#faq" class="hover:text-white">FAQ</a>
+        <a href="/privacy.html" class="hover:text-white">Privacy</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <section class="relative bg-grid" id="main" role="main">
+    <div class="max-w-6xl mx-auto px-4 py-14 sm:py-20">
+      <div class="relative frame rounded-2xl">
+        <div class="relative grid lg:grid-cols-2 gap-10 p-6 sm:p-10">
+          <!-- Left: copy -->
+          <div class="flex flex-col justify-center">
+            <div class="flex items-center gap-2 text-qgold mb-2">
+              <span class="inline-flex items-center gap-2 text-xs tracking-widest">
+                <span class="w-1.5 h-1.5 rounded-full bg-qgold" aria-hidden="true"></span> FOUNDING MEMBERS PROGRAM
+              </span>
+            </div>
+            <h1 class="text-4xl sm:text-5xl font-semibold leading-tight">Devnet-0 Waitlist</h1>
+            <p class="mt-4 text-lg text-qmuted">
+              Be part of the first wave on a fast, <span class="text-white">post-quantum-ready</span> L1 —
+              whether you’re a <strong>curious newcomer</strong>, a <strong>creator</strong>, or a <strong>developer</strong>.
+              Use the <span class="text-qgold font-medium">Quantara Wallet</span> and claim from the
+              <span class="text-qgold font-medium">Quantara Faucet</span> on day one. No crypto experience required.
+            </p>
+
+            <!-- Feature chips -->
+            <div class="mt-6 flex flex-wrap gap-3 text-sm">
+              <span class="chip inline-flex items-center gap-2 rounded-full px-3 py-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" class="text-qgold" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v6l4 2"></path></svg>
+                6-second blocks
+              </span>
+              <span class="chip inline-flex items-center gap-2 rounded-full px-3 py-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" class="text-qgold" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3l7 7-7 11L5 10z"></path></svg>
+                SS58=73 • QTR • 12 decimals
+              </span>
+              <span class="chip inline-flex items-center gap-2 rounded-full px-3 py-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" class="text-qgold" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="4" width="18" height="6" rx="2"></rect><path d="M7 20h10M12 10v10"></path></svg>
+                Faucet API (rate-limited)
+              </span>
+              <span class="chip inline-flex items-center gap-2 rounded-full px-3 py-2">
+                <svg width="16" height="16" viewBox="0 0 24 24" class="text-qgold" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+                Human check
+              </span>
+            </div>
+
+            <!-- Dual CTA -->
+            <div class="mt-8 flex flex-wrap gap-3">
+              <a href="#join" class="inline-flex items-center justify-center rounded-xl bg-qgold px-5 py-3 text-black font-semibold hover:opacity-90 shadow-glow" aria-label="Jump to the waitlist form">
+                Join the Waitlist
+              </a>
+              <a href="/wallet/" class="inline-flex items-center justify-center rounded-xl border border-qline px-5 py-3 text-white hover:bg-white/5" aria-label="Preview Quantara Wallet">
+                Preview Quantara Wallet
+              </a>
+            </div>
+          </div>
+
+          <!-- Right: glossy form -->
+          <div id="join" class="lg:pl-4">
+            <div class="bg-qpanel/85 border border-white/10 rounded-2xl p-6 sm:p-7 shadow-glow" aria-labelledby="form-title">
+              <h2 class="text-xl font-medium" id="form-title">Join the Waitlist</h2>
+              <p class="mt-1 text-sm text-qmuted" id="form-desc">Get a 72-hour heads-up and faucet priority.</p>
+
+              <form name="waitlist" method="POST" data-netlify="true" action="/success.html" netlify-honeypot="bot-field" class="mt-5" aria-describedby="form-desc">
+                <input type="hidden" name="form-name" value="waitlist" />
+                <p class="hidden"><label>Don’t fill this out: <input name="bot-field" /></label></p>
+
+                <!-- Hidden auto-referral capture -->
+                <input type="hidden" name="referral_auto" id="referral_auto" />
+
+                <label class="block text-sm text-qmuted" for="email">Email</label>
+                <input required type="email" id="email" name="email" autocomplete="email"
+                       class="mt-1 w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3 outline-none focus:border-qgold"
+                       placeholder="you@company.com" />
+
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm text-qmuted" for="role">Role</label>
+                    <select id="role" name="role" class="mt-1 w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3">
+                      <option>Enthusiast (No code)</option>
+                      <option>Creator</option>
+                      <option>Builder</option>
+                      <option>Validator</option>
+                      <option>Ambassador</option>
+                      <option>Partner</option>
+                      <option>Press</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm text-qmuted" for="exp">Experience</label>
+                    <select id="exp" name="experience" class="mt-1 w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3">
+                      <option>New</option><option>Intermediate</option><option>Advanced</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="mt-4 grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-sm text-qmuted" for="discord">Discord</label>
+                    <input id="discord" name="discord" placeholder="username#0000"
+                           class="mt-1 w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3" />
+                  </div>
+                  <div>
+                    <label class="block text-sm text-qmuted" for="github">GitHub</label>
+                    <input id="github" name="github" placeholder="https://github.com/you"
+                           class="mt-1 w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3" />
+                  </div>
+                </div>
+
+                <div class="mt-4">
+                  <label class="block text-sm text-qmuted" for="country">Country/Region</label>
+                  <input id="country" name="country"
+                         class="mt-1 w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3" />
+                </div>
+
+                <div class="mt-4">
+                  <label class="block text-sm text-qmuted" for="referral">Referral code (optional)</label>
+                  <input id="referral" name="referral" placeholder="ABC123"
+                         class="mt-1 w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3" />
+                </div>
+
+                <!-- Turnstile widget -->
+                <div class="cf-turnstile mt-4" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-theme="dark" aria-label="Human verification"></div>
+
+                <div class="mt-5 flex items-start gap-2 text-xs text-qmuted">
+                  <input id="consent" type="checkbox" required class="mt-1" aria-describedby="consent-help"/>
+                  <label for="consent">I agree to receive Devnet-0 updates. Testnet tokens have no monetary value.</label>
+                </div>
+                <p id="consent-help" class="sr-only">Consent required to receive Devnet-0 updates by email.</p>
+
+                <div class="mt-5 grid sm:flex gap-3">
+                  <button type="submit" class="rounded-xl bg-qgold text-black font-semibold py-3 px-5 hover:opacity-90" aria-label="Submit and join the waitlist">
+                    Join the Waitlist
+                  </button>
+                  <button type="button" id="share-ref" class="rounded-xl border border-qline px-5 py-3 hover:bg-white/5">
+                    Share your referral link
+                  </button>
+                </div>
+
+                <p class="mt-3 text-[12px] text-qmuted">By joining, you accept our <a class="underline hover:text-white" href="/privacy.html">Privacy Notice</a>.</p>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SS58/QTR badge -->
+      <div class="mt-4 text-xs text-qmuted">
+        Compatible with Substrate wallets • <span class="text-qgold">SS58=73</span> • Token: <span class="text-qgold">QTR</span> • Decimals: <span class="text-qgold">12</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick actions: Explorer / RPC / Status -->
+  <section class="border-t border-qline">
+    <div class="max-w-6xl mx-auto px-4 py-6 flex flex-wrap items-center gap-3">
+      <a href="/explorer/" class="rounded-xl border border-qline px-4 py-2 hover:bg-white/5">Open Explorer</a>
+      <button id="copy-rpc" class="rounded-xl border border-qline px-4 py-2 hover:bg-white/5">Copy RPC URL</button>
+      <a href="/status/" class="rounded-xl border border-qline px-4 py-2 hover:bg-white/5">Status Page</a>
+      <span class="text-xs text-qmuted ml-auto">RPC: <code id="rpc-url" class="text-white/80">wss://rpc.devnet-0.quantara.xyz</code></span>
+    </div>
+  </section>
+
+  <!-- Live network strip (simulated until launch) -->
+  <section class="border-t border-qline">
+    <div class="max-w-6xl mx-auto px-4 py-6">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="rounded-xl border border-qline p-4 bg-white/[.02] text-center">
+          <div class="text-sm text-qmuted">Network</div>
+          <div class="mt-1 font-semibold">Devnet-0 <span id="live-badge" class="text-xs text-qgold">Preview</span></div>
+        </div>
+        <div class="rounded-xl border border-qline p-4 bg-white/[.02] text-center">
+          <div class="text-sm text-qmuted">Block time</div>
+          <div class="mt-1 font-semibold">~6s</div>
+        </div>
+        <div class="rounded-xl border border-qline p-4 bg-white/[.02] text-center">
+          <div class="text-sm text-qmuted">Height</div>
+          <div id="height" class="mt-1 font-semibold">12,345</div>
+        </div>
+        <div class="rounded-xl border border-qline p-4 bg-white/[.02] text-center">
+          <div class="text-sm text-qmuted">Peers</div>
+          <div id="peers" class="mt-1 font-semibold">18</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Social proof logos -->
+  <section aria-label="Social proof" class="border-t border-qline">
+    <div class="max-w-6xl mx-auto px-4 py-10">
+      <p class="text-center text-qmuted text-sm">Trusted by builders from</p>
+      <div class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-6 opacity-80">
+        <div class="h-10 bg-white/5 border border-qline rounded-lg"></div>
+        <div class="h-10 bg-white/5 border border-qline rounded-lg"></div>
+        <div class="h-10 bg-white/5 border border-qline rounded-lg"></div>
+        <div class="h-10 bg-white/5 border border-qline rounded-lg"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="gold-line"></div>
+
+  <!-- WALLET + FAUCET -->
+  <section id="wallet" class="border-t border-qline" aria-label="Quantara wallet and faucet">
+    <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <h2 class="text-2xl font-semibold">Quantara Wallet</h2>
+          <p class="mt-2 text-qmuted">
+            Our lightweight web wallet for Devnet-0. Create a wallet in seconds, copy your
+            <span class="text-qgold">SS58=73</span> address, scan a QR, and see your
+            <span class="text-qgold">QTR</span> balance. A step-by-step guide is built in.
+          </p>
+          <ul class="mt-3 space-y-2 text-sm text-qmuted">
+            <li>• Instant address creation (sr25519)</li>
+            <li>• Balance viewer (12 decimals)</li>
+            <li>• Copy & QR for the faucet</li>
+          </ul>
+          <a href="/wallet/" class="mt-4 inline-flex items-center justify-center rounded-xl border border-qline px-5 py-3 text-white hover:bg-white/5" aria-label="Open Quantara Wallet">Open Wallet</a>
+        </div>
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <h2 class="text-2xl font-semibold">Quantara Faucet</h2>
+          <p class="mt-2 text-qmuted">
+            Claim <span class="text-qgold">QTR (testnet)</span> to explore the network, try apps, or
+            run a validator. Human-check protected with fair, per-hour limits. (For developers, a CI-friendly API is available.)
+          </p>
+          <ul class="mt-3 space-y-2 text-sm text-qmuted">
+            <li>• Rate-limited anti-bot</li>
+            <li>• Public API for CI</li>
+            <li>• Explorer link after claim</li>
+          </ul>
+          <a href="/faucet/" class="mt-4 inline-flex items-center justify-center rounded-xl bg-qgold px-5 py-3 text-black font-semibold hover:opacity-90" aria-label="View Quantara Faucet">View Faucet</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PREVIEW (locked until launch) -->
+  <section id="preview" class="border-t border-qline" aria-label="Preview wallet and faucet">
+    <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-semibold">See what’s coming</h2>
+          <p class="mt-2 text-qmuted">A quick look at the Quantara Wallet and Faucet. Interaction unlocks at launch.</p>
+        </div>
+        <button id="watch-demo" class="mt-3 rounded-xl border border-qline px-4 py-2 hover:bg-white/5">Watch a 20-second demo</button>
+      </div>
+
+      <div class="mt-6 grid md:grid-cols-2 gap-6">
+        <!-- Wallet preview -->
+        <div class="rounded-2xl border border-qline bg-white/[.02] p-6 preview-card">
+          <div class="preview-ui">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-medium">Quantara Wallet</h3>
+              <span class="text-xs text-qmuted">SS58=73 • QTR</span>
+            </div>
+            <div class="mt-4 grid gap-3">
+              <div class="rounded-xl bg-black/40 border border-white/10 p-4">
+                <div class="text-xs text-qmuted">Address</div>
+                <div class="mt-1 font-mono text-sm">5Fh…Y88 <span class="text-qmuted">(preview)</span></div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <button class="rounded-xl bg-qgold text-black font-semibold py-2.5">Copy</button>
+                <button class="rounded-xl border border-qline py-2.5">Show QR</button>
+              </div>
+              <div class="rounded-xl bg-black/40 border border-white/10 p-4">
+                <div class="text-xs text-qmuted">Balance</div>
+                <div class="mt-1 font-mono">0.000000000000 QTR</div>
+              </div>
+            </div>
+          </div>
+          <div class="locker">
+            <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/>
+            </svg>
+            <div class="text-sm">Unlocks at <time id="preview-release-time" class="text-qgold"></time></div>
+            <small id="preview-countdown" class="text-xs">T-—h —m</small>
+            <a href="#join" class="mt-2 inline-flex items-center justify-center rounded-xl bg-qgold px-4 py-2 text-black font-semibold shadow-glow">Get notified</a>
+          </div>
+        </div>
+
+        <!-- Faucet preview -->
+        <div class="rounded-2xl border border-qline bg-white/[.02] p-6 preview-card">
+          <div class="preview-ui">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xl font-medium">Quantara Faucet</h3>
+              <span class="text-xs text-qmuted">Fair limits • Human check</span>
+            </div>
+            <div class="mt-4 grid gap-3">
+              <div>
+                <label class="block text-sm text-qmuted">Your SS58=73 address</label>
+                <input disabled class="mt-1 w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3" placeholder="5Fh…Y88 (preview only)"/>
+              </div>
+              <button class="rounded-xl bg-qgold text-black font-semibold py-3">Request QTR (testnet)</button>
+              <p class="text-xs text-qmuted">Per-hour limit • CI API available at launch</p>
+            </div>
+          </div>
+          <div class="locker">
+            <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V8a4 4 0 1 1 8 0v3"/>
+            </svg>
+            <div class="text-sm">Unlocks at <time id="preview-release-time-2" class="text-qgold"></time></div>
+            <small id="preview-countdown-2" class="text-xs">T-—h —m</small>
+            <a href="#join" class="mt-2 inline-flex items-center justify-center rounded-xl bg-qgold px-4 py-2 text-black font-semibold shadow-glow">Get notified</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Soft-disabled direct links -->
+      <div class="mt-6 flex flex-wrap gap-3">
+        <a href="/wallet/" data-live-link class="is-disabled inline-flex items-center justify-center rounded-xl border border-qline px-5 py-3 text-white hover:bg-white/5">Open Wallet</a>
+        <a href="/faucet/" data-live-link class="is-disabled inline-flex items-center justify-center rounded-xl bg-qgold px-5 py-3 text-black font-semibold hover:opacity-90">View Faucet</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Metrics strip -->
+  <section class="border-t border-qline">
+    <div class="max-w-6xl mx-auto px-4 py-12">
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="rounded-2xl border border-qline p-4 bg-white/[.02] text-center">
+          <div class="text-2xl font-semibold" data-countup="1247">0</div>
+          <div class="text-xs text-qmuted mt-1">Waitlist sign-ups</div>
+        </div>
+        <div class="rounded-2xl border border-qline p-4 bg-white/[.02] text-center">
+          <div class="text-2xl font-semibold" data-countup="34">0</div>
+          <div class="text-xs text-qmuted mt-1">Countries</div>
+        </div>
+        <div class="rounded-2xl border border-qline p-4 bg-white/[.02] text-center">
+          <div class="text-2xl font-semibold" data-countup="6">0</div>
+          <div class="text-xs text-qmuted mt-1">Avg block (s)</div>
+        </div>
+        <div class="rounded-2xl border border-qline p-4 bg-white/[.02] text-center">
+          <div class="text-2xl font-semibold" data-countup="73">0</div>
+          <div class="text-xs text-qmuted mt-1">SS58 prefix</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Start building (copyable code) -->
+  <section id="build" class="border-t border-qline">
+    <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+      <h2 class="text-2xl font-semibold">Start building in minutes</h2>
+      <div class="mt-6 grid md:grid-cols-3 gap-5">
+        <!-- Node (Docker) -->
+        <div class="relative rounded-2xl border border-qline p-5 bg-white/[.02]">
+          <div class="text-qgold font-medium">Run a node (Docker)</div>
+          <button class="copy-btn rounded-md border border-qline px-2 py-1 text-xs hover:bg-white/5" data-copy="#code-docker">Copy</button>
+          <pre id="code-docker" class="mt-3 p-3 rounded-lg overflow-x-auto"><code>docker run --rm -p 9944:9944 -p 9933:9933 quantara/node:devnet-0</code></pre>
+          <p class="text-xs text-qmuted mt-2">Opens WS-RPC on 9944 and HTTP on 9933.</p>
+        </div>
+        <!-- Wallet SDK -->
+        <div class="relative rounded-2xl border border-qline p-5 bg-white/[.02]">
+          <div class="text-qgold font-medium">Wallet SDK (JS)</div>
+          <button class="copy-btn rounded-md border border-qline px-2 py-1 text-xs hover:bg-white/5" data-copy="#code-sdk">Copy</button>
+          <pre id="code-sdk" class="mt-3 p-3 rounded-lg overflow-x-auto"><code>import { connect, getAddress } from "@quantara/wallet";
+const session = await connect();
+const addr = await getAddress(session, { ss58: 73 });
+console.log(addr);</code></pre>
+          <p class="text-xs text-qmuted mt-2">Preview API. Unlocks at launch.</p>
+        </div>
+        <!-- Faucet API -->
+        <div class="relative rounded-2xl border border-qline p-5 bg-white/[.02]">
+          <div class="text-qgold font-medium">Faucet API</div>
+          <button class="copy-btn rounded-md border border-qline px-2 py-1 text-xs hover:bg-white/5" data-copy="#code-faucet">Copy</button>
+          <pre id="code-faucet" class="mt-3 p-3 rounded-lg overflow-x-auto"><code>curl -X POST https://api.quantara.xyz/faucet/claim \
+ -H "Content-Type: application/json" \
+ -d '{"address":"&lt;SS58-73&gt;","proof":"&lt;turnstile_token&gt;"}'</code></pre>
+          <p class="text-xs text-qmuted mt-2">Rate-limited. Include Turnstile proof.</p>
+        </div>
+      </div>
+      <!-- Validator teaser -->
+      <div class="mt-6 rounded-2xl border border-qline p-6 bg-white/[.02]">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div class="text-qgold font-medium">Become a validator</div>
+            <p class="text-sm text-qmuted mt-1">Hardware profile, keys, and scripts — with priority onboarding for waitlisted validators.</p>
+          </div>
+          <a href="/validators/" class="rounded-xl border border-qline px-5 py-3 hover:bg-white/5">Validator Guide</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Referral Rewards -->
+  <section id="rewards" class="border-t border-qline">
+    <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-semibold">Referral Rewards</h2>
+          <p class="mt-2 text-qmuted">Invite friends; earn perks as your confirmed referrals join the waitlist. <span class="text-white">1 referral = 1 point.</span></p>
+        </div>
+        <div class="flex gap-2">
+          <button id="open-ref-share-2" class="rounded-xl bg-qgold text-black font-semibold px-4 py-2">Copy my link</button>
+          <a href="#faq" class="rounded-xl border border-qline px-4 py-2 hover:bg-white/5">Rules</a>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="mt-6 grid md:grid-cols-2 gap-6">
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-qmuted">Progress to next tier</div>
+            <div class="text-sm"><span id="my-points" class="text-qgold font-semibold">0</span> pts</div>
+          </div>
+          <div class="mt-4 space-y-4" id="rewards-chart" aria-label="Rewards chart">
+            <!-- Each row -->
+            <div>
+              <div class="flex items-center justify-between text-sm">
+                <span>Tier 1 • 1 pt</span><span class="text-qmuted">Unlocked</span>
+              </div>
+              <div class="bar-wrap mt-2"><div class="bar" data-target="20"></div></div>
+              <p class="text-xs text-qmuted mt-1">Early-access time slot + Founding Member badge</p>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-sm">
+                <span>Tier 2 • 3 pts</span><span class="text-qmuted">In progress</span>
+              </div>
+              <div class="bar-wrap mt-2"><div class="bar" data-target="40"></div></div>
+              <p class="text-xs text-qmuted mt-1">Higher faucet limit for first 48h</p>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-sm">
+                <span>Tier 3 • 5 pts</span><span class="text-qmuted">In progress</span>
+              </div>
+              <div class="bar-wrap mt-2"><div class="bar" data-target="60"></div></div>
+              <p class="text-xs text-qmuted mt-1">“Contributor” Discord role + private AMA</p>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-sm">
+                <span>Tier 4 • 10 pts</span><span class="text-qmuted">In progress</span>
+              </div>
+              <div class="bar-wrap mt-2"><div class="bar" data-target="80"></div></div>
+              <p class="text-xs text-qmuted mt-1">Swag drop raffle + homepage shout-out</p>
+            </div>
+            <div>
+              <div class="flex items-center justify-between text-sm">
+                <span>Tier 5 • 20 pts</span><span class="text-qmuted">In progress</span>
+              </div>
+              <div class="bar-wrap mt-2"><div class="bar" data-target="100"></div></div>
+              <p class="text-xs text-qmuted mt-1">Validator fast-track + Builder showcase spotlight</p>
+            </div>
+          </div>
+          <p class="text-[11px] text-qmuted mt-3">Perks apply to Devnet-0; non-transferable; testnet tokens have no monetary value.</p>
+        </div>
+
+        <!-- Tiers table + mini leaderboard -->
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <div class="text-sm text-qmuted mb-2">Tiers & perks</div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="text-qmuted border-b border-qline">
+                <tr><th class="py-2 text-left font-medium">Tier</th><th class="py-2 text-left font-medium">Points</th><th class="py-2 text-left font-medium">Perk</th></tr>
+              </thead>
+              <tbody class="divide-y divide-qline/60">
+                <tr><td class="py-2">Tier 1</td><td>1</td><td>Early-access slot + Founding Member badge</td></tr>
+                <tr><td class="py-2">Tier 2</td><td>3</td><td>Higher faucet limit (48h)</td></tr>
+                <tr><td class="py-2">Tier 3</td><td>5</td><td>Contributor role + private AMA</td></tr>
+                <tr><td class="py-2">Tier 4</td><td>10</td><td>Swag raffle + homepage shout-out</td></tr>
+                <tr><td class="py-2">Tier 5</td><td>20</td><td>Validator fast-track + showcase spotlight</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-6">
+            <div class="flex items-center justify-between">
+              <div class="text-sm text-qmuted">Weekly leaderboard (preview)</div>
+              <a href="/leaderboard/" class="text-xs underline">See all</a>
+            </div>
+            <ol class="mt-2 text-sm space-y-1">
+              <li class="flex justify-between"><span>0xNova</span><span class="text-qgold">14 pts</span></li>
+              <li class="flex justify-between"><span>cypher-k</span><span class="text-qgold">11 pts</span></li>
+              <li class="flex justify-between"><span>staker_cat</span><span class="text-qgold">9 pts</span></li>
+            </ol>
+            <div class="mt-3 text-xs text-qmuted">Real-time rankings unlock at launch.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Why join -->
+  <section id="why" class="border-t border-qline" aria-label="Why join now">
+    <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+      <h2 class="text-2xl font-semibold">Why join now</h2>
+      <div class="mt-6 grid md-grid-cols-1 md:grid-cols-3 gap-5">
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <div class="flex items-center gap-2 text-qgold font-medium">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2l3 7 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/></svg>
+            Founding Member Badge
+          </div>
+          <p class="mt-2 text-qmuted text-sm">Permanent Discord role and recognition on our explorer. You were here first.</p>
+        </div>
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <div class="flex items-center gap-2 text-qgold font-medium">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7h-9M7 7H4m16 5H4m16 5H4"/></svg>
+            Priority Access
+          </div>
+          <p class="mt-2 text-qmuted text-sm">Early faucet access, clearer guides, and fast-lane support during the first 48 hours.</p>
+        </div>
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <div class="flex items-center gap-2 text-qgold font-medium">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 12l2-2 4 4 10-10 2 2-12 12z"/></svg>
+            Guided Onboarding
+          </div>
+          <p class="mt-2 text-qmuted text-sm">No experience? No problem. Our step-by-step wallet and faucet walkthrough gets you on-chain in minutes.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What makes Quantara different -->
+  <section class="border-t border-qline">
+    <div class="max-w-6xl mx-auto px-4 py-12">
+      <h2 class="text-2xl font-semibold">What makes Quantara different?</h2>
+      <div class="mt-6 grid md:grid-cols-3 gap-5">
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <div class="text-qgold font-medium">Future-proof security</div>
+          <p class="mt-2 text-qmuted text-sm">Post-quantum readiness helps protect addresses and transactions as cryptography evolves.</p>
+        </div>
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <div class="text-qgold font-medium">Fast finality</div>
+          <p class="mt-2 text-qmuted text-sm">Snappy 6-second blocks, built on proven Substrate foundations.</p>
+        </div>
+        <div class="rounded-2xl border border-qline p-6 bg-white/[.02]">
+          <div class="text-qgold font-medium">Open to everyone</div>
+          <p class="mt-2 text-qmuted text-sm">No token sale. Testnet tokens have no monetary value — explore with zero pressure.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIMELINE -->
+  <section id="timeline" class="border-t border-qline">
+    <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+      <h2 class="text-2xl font-semibold">Road to Devnet-0</h2>
+      <div class="mt-8 grid md:grid-cols-4 gap-5">
+        <div class="rounded-2xl border border-qline p-5 bg-white/[.02]"><div class="text-qgold font-medium">T-72h</div><p class="mt-1 text-sm text-qmuted">Email heads-up, wallet setup, faucet rules.</p></div>
+        <div class="rounded-2xl border border-qline p-5 bg-white/[.02]"><div class="text-qgold font-medium">T-24h</div><p class="mt-1 text-sm text-qmuted">Validator keys + final checklist.</p></div>
+        <div class="rounded-2xl border border-qline p-5 bg-white/[.02]"><div class="text-qgold font-medium">T-0</div><p class="mt-1 text-sm text-qmuted">Devnet-0 live • Faucet priority queue opens.</p></div>
+        <div class="rounded-2xl border border-qline p-5 bg-white/[.02]"><div class="text-qgold font-medium">T+48h</div><p class="mt-1 text-sm text-qmuted">Office hours • Builder showcase submissions.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW -->
+  <section id="how" class="border-t border-qline" aria-label="How it works">
+    <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+      <h2 class="text-2xl font-semibold">How it works</h2>
+      <ol class="mt-4 space-y-2 text-qmuted">
+        <li>1. Join the waitlist.</li>
+        <li>2. Watch your inbox for your early-access window.</li>
+        <li>3. Open Quantara Wallet (or any Substrate wallet) and copy your SS58=73 address.</li>
+        <li>4. Claim QTR (testnet) from the faucet and follow our simple guide to send your first transaction.</li>
+      </ol>
+      <p class="mt-3 text-xs text-qmuted">No token sale. Testnet tokens have no monetary value.</p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq" class="border-t border-qline" aria-label="Frequently asked questions">
+    <div class="max-w-6xl mx-auto px-4 py-12 sm:py-16">
+      <h2 class="text-2xl font-semibold">FAQ</h2>
+      <div class="mt-4 grid md:grid-cols-2 gap-6 text-qmuted">
+        <div><h3 class="text-white font-medium">When is Devnet-0 launching?</h3><p class="mt-1">We’ll email the exact window and faucet link to the waitlist.</p></div>
+        <div><h3 class="text-white font-medium">Can I run a validator?</h3><p class="mt-1">Yes—choose “Validator” on the form to get the guide first.</p></div>
+        <div><h3 class="text-white font-medium">Are there rewards?</h3><p class="mt-1">Founding Member recognition and higher faucet limits. Testnet tokens have no monetary value.</p></div>
+        <div><h3 class="text-white font-medium">Where is support?</h3><p class="mt-1">Join our Discord #devnet-0 channel for live help and updates.</p></div>
+        <div><h3 class="text-white font-medium">Referral rules?</h3><p class="mt-1">Referrals count when the invitee verifies via email (and human check). Perks are non-transferable and apply to Devnet-0 only.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t border-qline" role="contentinfo">
+    <div class="max-w-6xl mx-auto px-4 py-8 text-sm text-qmuted flex items-center justify-between">
+      <span>© 2025 Quantara Technology LLC — Testnet tokens have no monetary value.</span>
+      <div class="hidden sm:flex items-center gap-3">
+        <a href="#" aria-label="Twitter" class="hover:text-white">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 5.8c-.7.3-1.5.5-2.3.6.8-.5 1.4-1.2 1.7-2.1-.8.5-1.7.8-2.6 1-1.6-1.7-4.3-1.5-5.7.4-1 1.3-1 3 .1 4.2-2.9-.1-5.6-1.6-7.3-4-.9 1.6-.4 3.6 1.1 4.6-.6 0-1.2-.2-1.7-.5 0 1.7 1.2 3.2 2.9 3.6-.5.1-1 .2-1.6.1.5 1.5 1.9 2.6 3.6 2.7-1.3 1-3 1.5-4.6 1.3 1.7 1.1 3.7 1.8 5.7 1.8 6.9 0 10.7-5.8 10.4-10.9.7-.5 1.4-1.2 1.9-2z"/></svg>
+        </a>
+        <a href="#" aria-label="Discord" class="hover:text-white">
+          <svg width="20" height="20" viewBox="0 0 245 240" fill="currentColor" aria-hidden="true"><path d="M104.4 104.9c-5.7 0-10.2 5-10.2 11.1 0 6.1 4.6 11.1 10.2 11.1 5.7 0 10.2-5 10.2-11.1 0-6.1-4.5-11.1-10.2-11.1zm36.2 0c-5.7 0-10.2 5-10.2 11.1 0 6.1 4.6 11.1 10.2 11.1 5.7 0 10.2-5 10.2-11.1 0-6.1-4.5-11.1-10.2-11.1z"/><path d="M189.5 20h-134C36.5 20 20 36.5 20 55.5v129C20 203.5 36.5 220 55.5 220h114l-5.4-18.8 13.1 12.1 12.4 11.5 22.9 21.2V55.5C213.5 36.5 197 20 178.5 20zm-31 135.4s-2.9-3.5-5.3-6.5c10.5-3 14.5-9.6 14.5-9.6a46.4 46.4 0 01-9.2 4.7c-3.9 1.6-7.7 2.7-11.4 3.3-7.6 1.4-14.6 1-20.5-.1-4.5-.9-8.4-2-11.6-3.3-1.8-.7-3.7-1.5-5.6-2.6-.2-.1-.3-.2-.5-.3l-.1-.1s3.9 6.5 14.2 9.6c-2.4 3-5.4 6.6-5.4 6.6-17.9-.6-24.7-12.3-24.7-12.3 0-26 11.6-47.1 11.6-47.1 11.6-8.6 22.7-8.3 22.7-8.3l.8 1c-14.6 4.2-21.3 10.6-21.3 10.6s1.8-.9 4.7-2.1c8.6-3.8 15.4-4.9 18.2-5.1.5-.1.9-.1 1.4-.1 5-.7 10.5-.9 16.3-.2 7.7.9 15.9 3.2 24.2 7.9 0 0-6.4-6.1-20.3-10.3l1.1-1.3s11.1-.3 22.7 8.3c0 0 11.6 21.1 11.6 47.1 0 0-6.9 11.7-24.8 12.3z"/></svg>
+        </a>
+        <a href="#" aria-label="GitHub" class="hover:text-white">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.9 5.3.9 11.6c0 4.9 3.2 9 7.6 10.5.6.1.8-.3.8-.6v-2.1c-3.1.7-3.8-1.3-3.8-1.3-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 .1.6 1.6 2.5 2 1.4.3 2.9-.1 3.6-.9.1-1 .5-1.7 1-2.1-2.5-.3-5.1-1.3-5.1-5.8 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.3 11.3 0 016 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.5-2.6 5.5-5.1 5.8.6.5 1.1 1.5 1.1 3v4.5c0 .3.2.7.8.6 4.4-1.4 7.6-5.6 7.6-10.5C23.1 5.3 18.3.5 12 .5z"/></svg>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modals -->
+  <div id="video-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-40">
+    <div class="bg-qpanel border border-qline rounded-2xl shadow-glow w-[92vw] max-w-3xl">
+      <div class="flex items-center justify-between p-3 border-b border-qline">
+        <span class="text-sm text-qmuted">Quantara Wallet + Faucet Preview</span>
+        <button id="close-modal" class="px-2 py-1 rounded hover:bg-white/5">✕</button>
+      </div>
+      <div class="p-3">
+        <video controls class="w-full rounded-lg" poster="/assets/og-image.png">
+          <source src="/assets/quantara-demo.mp4" type="video/mp4" />
+        </video>
+      </div>
+    </div>
+  </div>
+
+  <div id="ref-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-40">
+    <div class="bg-qpanel border border-qline rounded-2xl shadow-glow w-[92vw] max-w-md">
+      <div class="flex items-center justify-between p-3 border-b border-qline">
+        <span class="text-sm text-qmuted">Share your referral link</span>
+        <button id="close-ref" class="px-2 py-1 rounded hover:bg-white/5">✕</button>
+      </div>
+      <div class="p-4">
+        <p class="text-sm text-qmuted">Friends who join with your link may receive faucet priority.</p>
+        <div class="mt-3 flex gap-2">
+          <input id="ref-link" class="flex-1 rounded-xl bg-black/40 border border-white/10 px-3 py-2" readonly value="" />
+          <button id="copy-ref" class="rounded-xl bg-qgold text-black font-semibold px-4">Copy</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Launch gating & UX scripts -->
+  <script>
+    // ====== Configure your real launch timestamp ======
+    const Q_RELEASE_AT = new Date('2025-11-30T17:00:00Z');
+
+    (function setupPreviewGate() {
+      const live = Date.now() >= Q_RELEASE_AT.getTime();
+      document.documentElement.setAttribute('data-live', live ? '1' : '0');
+
+      const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      const t1 = document.getElementById('preview-release-time');
+      const t2 = document.getElementById('preview-release-time-2');
+      [t1, t2].forEach(t => { if (t) { t.dateTime = Q_RELEASE_AT.toISOString(); t.textContent = fmt.format(Q_RELEASE_AT); } });
+
+      const c1 = document.getElementById('preview-countdown');
+      const c2 = document.getElementById('preview-countdown-2');
+      function tick() {
+        const diff = Q_RELEASE_AT - Date.now();
+        if (diff <= 0) {
+          document.documentElement.setAttribute('data-live', '1');
+          if (c1) c1.textContent = 'LIVE';
+          if (c2) c2.textContent = 'LIVE';
+          document.querySelectorAll('[data-live-link]').forEach(a => a.classList.remove('is-disabled'));
+          document.getElementById('announce')?.classList.add('hidden');
+          document.getElementById('live-badge')?.replaceChildren(document.createTextNode('Live'));
+          return;
+        }
+        const h = Math.floor(diff / 36e5);
+        const m = Math.floor((diff % 36e5) / 6e4);
+        const s = Math.floor((diff % 6e4) / 1000);
+        const txt = `T-${h}h ${m}m ${s}s`;
+        const b = document.getElementById('bar-countdown');
+        if (b) b.textContent = txt;
+        if (c1) c1.textContent = txt;
+        if (c2) c2.textContent = txt;
+        requestAnimationFrame(()=>setTimeout(tick, 250));
+      }
+      tick();
+
+      if (!live) {
+        document.querySelectorAll('[data-live-link]').forEach(a => {
+          a.setAttribute('aria-disabled', 'true');
+          a.addEventListener('click', e => {
+            e.preventDefault();
+            alert('This opens at launch. Join the waitlist to be notified.');
+          });
+        });
+      }
+    })();
+
+    // Simulated height/peers ticker pre-launch
+    (function mockStatus(){
+      const h = document.getElementById('height');
+      const p = document.getElementById('peers');
+      let height = 12345, peers = 18;
+      setInterval(()=>{
+        height += Math.floor(Math.random()*3); // 0-2
+        peers = Math.max(10, Math.min(64, peers + (Math.random()>0.5?1:-1)));
+        if (h) h.textContent = height.toLocaleString();
+        if (p) p.textContent = peers.toString();
+      }, 2000);
+    })();
+
+    // Video modal
+    (function(){
+      const m=document.getElementById('video-modal');
+      document.getElementById('watch-demo')?.addEventListener('click',()=>m.classList.remove('hidden'));
+      document.getElementById('close-modal')?.addEventListener('click',()=>m.classList.add('hidden'));
+      m?.addEventListener('click',e=>{ if(e.target===m) m.classList.add('hidden'); });
+    })();
+
+    // Referral share modal (buttons from form + top of rewards)
+    (function(){
+      const modal = document.getElementById('ref-modal');
+      const formBtn = document.getElementById('share-ref');
+      const topBtn = document.getElementById('open-ref-share-2');
+      const closeRef = document.getElementById('close-ref');
+      const input = document.getElementById('ref-link');
+      const copyRef = document.getElementById('copy-ref');
+      const url = new URL(window.location.href);
+      const myRef = url.searchParams.get('ref') || 'YOURCODE';
+      const base = url.origin + url.pathname.replace(/index\.html$/, '');
+      input.value = `${base}?ref=${encodeURIComponent(myRef)}`;
+
+      [formBtn, topBtn].forEach(b=>b?.addEventListener('click', ()=>modal.classList.remove('hidden')));
+      closeRef?.addEventListener('click', ()=>modal.classList.add('hidden'));
+      modal?.addEventListener('click', e=>{ if(e.target===modal) modal.classList.add('hidden'); });
+      copyRef?.addEventListener('click', async ()=>{
+        try { await navigator.clipboard.writeText(input.value); copyRef.textContent='Copied!'; setTimeout(()=>copyRef.textContent='Copy',1500); }
+        catch { input.select(); document.execCommand('copy'); }
+      });
+    })();
+
+    // Copy buttons for code blocks
+    document.querySelectorAll('[data-copy]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const sel = btn.getAttribute('data-copy'); const el = document.querySelector(sel);
+        if(!el) return; const text = el.innerText.replace(/\n+$/,'');
+        try { await navigator.clipboard.writeText(text); btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy',1200); }
+        catch {}
+      });
+    });
+
+    // Copy RPC
+    document.getElementById('copy-rpc')?.addEventListener('click', async ()=>{
+      const text = document.getElementById('rpc-url')?.textContent?.trim() || '';
+      if (!text) return;
+      try { await navigator.clipboard.writeText(text); alert('RPC URL copied'); } catch {}
+    });
+
+    // Metrics count-up
+    document.querySelectorAll('[data-countup]').forEach(el=>{
+      const end=+el.getAttribute('data-countup'); let cur=0, dur=900, start=performance.now();
+      const step=(t)=>{const k=Math.min(1,(t-start)/dur); cur=Math.floor(end*k); el.textContent=cur.toLocaleString();
+        if(k<1) requestAnimationFrame(step); else el.textContent=end.toLocaleString();};
+      requestAnimationFrame(step);
+    });
+
+    // Referral chart animation when in view
+    (function(){
+      const wrap = document.getElementById('rewards-chart');
+      if(!wrap) return;
+      const bars = wrap.querySelectorAll('.bar');
+      const io = new IntersectionObserver(entries=>{
+        entries.forEach(e=>{
+          if(e.isIntersecting){
+            bars.forEach(b=>{
+              const t = Math.min(100, Math.max(0, +b.getAttribute('data-target')||0));
+              b.style.transition='width 900ms cubic-bezier(.2,.9,.2,1)';
+              requestAnimationFrame(()=>b.style.width = t + '%');
+            });
+            io.disconnect();
+          }
+        });
+      }, { threshold:.25 });
+      io.observe(wrap);
+
+      // Optional: pull user's points from localStorage (preview mock)
+      const myPts = +(localStorage.getItem('q_points') || 0);
+      document.getElementById('my-points')?.replaceChildren(document.createTextNode(String(myPts)));
+    })();
+
+    // Referral & UTM capture
+    (function () {
+      const url = new URL(window.location.href);
+      const ref = url.searchParams.get('ref') || url.searchParams.get('r');
+      const field = document.getElementById('referral_auto');
+      if (ref && field) field.value = ref.slice(0, 64);
+
+      const form = document.forms.waitlist;
+      if (!form) return;
+      ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k=>{
+        const v = url.searchParams.get(k);
+        if (v) {
+          const el = document.createElement('input');
+          el.type='hidden'; el.name=k; el.value=v.slice(0,64);
+          form.appendChild(el);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

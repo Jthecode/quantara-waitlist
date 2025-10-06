@@ -1,0 +1,34 @@
+{
+  "name": "quantara-waitlist",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Static landing page + form for the Quantara Devnet-0 waitlist.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsx watch scripts/dev.ts",
+    "add:headers": "tsx scripts/add-header.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "@upstash/ratelimit": "^2.0.6",
+    "@upstash/redis": "^1.35.4",
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.44.6",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.16.3",
+    "postgres": "^3.4.7",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.10",
+    "@vercel/node": "^3.2.0",
+    "drizzle-kit": "^0.31.5",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  }
+}

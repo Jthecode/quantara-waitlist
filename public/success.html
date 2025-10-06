@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>You're on the list — Quantara</title>
+
+  <meta name="description" content="Thanks for joining the Quantara Devnet-0 waitlist. Get your early-access window, faucet instructions, and next steps." />
+  <meta name="theme-color" content="#0a0b0d">
+  <link rel="icon" href="/assets/favicon.ico" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+
+  <style>
+    :root { --pico-primary: #f1c46b; --pico-primary-background: #f1c46b; }
+    body { background:#0a0b0d; color:#fff; }
+    header, footer, .muted { color:#9aa0a6; }
+    .card { background:#101217; border:1px solid #191e25; border-radius:16px; padding:1.25rem; }
+    .stack { display:grid; gap: .75rem; }
+    .row { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
+    .pill { border:1px solid #191e25; background:#0c0e12; border-radius:999px; padding:.35rem .6rem; font-size:.8rem; color:#9aa0a6 }
+    .btn-ghost { background:transparent; border:1px solid #2a3340; }
+    .btn-gold { background:#f1c46b; color:#000; border:none; }
+    a[role="button"].btn-ghost:hover { background:#141924; }
+    .grid-2 { display:grid; gap:1rem; grid-template-columns: 1fr; }
+    @media (min-width: 768px){ .grid-2{ grid-template-columns: 1fr 1fr; } }
+    code { background:#151922; border:1px solid #1c2230; }
+  </style>
+</head>
+<body>
+  <main class="container" style="max-width: 860px; padding-block: 2rem;">
+    <article class="card">
+      <header class="row" style="justify-content: space-between;">
+        <h1 style="margin:0">You're on the list 🎉</h1>
+        <span class="pill">Devnet-0 • SS58=73 • QTR (testnet)</span>
+      </header>
+
+      <p class="muted">
+        We’ll email your early-access window and faucet instructions before Devnet-0 goes live.
+        In the meantime, here are some quick next steps.
+      </p>
+
+      <!-- Next steps -->
+      <section class="grid-2">
+        <div class="card" style="padding:1rem;">
+          <h2 style="margin:0 0 .5rem 0; font-size:1.1rem;">Join the community</h2>
+          <p class="muted" style="margin:.25rem 0 .75rem 0;">Get updates, support, and early meetups.</p>
+          <div class="row">
+            <a href="#" role="button" class="btn-gold">Join Discord</a>
+            <a href="#" role="button" class="btn-ghost">Follow on X</a>
+            <a href="https://github.com/" target="_blank" role="button" class="btn-ghost">GitHub</a>
+          </div>
+        </div>
+
+        <div class="card" style="padding:1rem;">
+          <h2 style="margin:0 0 .5rem 0; font-size:1.1rem;">Be ready on day one</h2>
+          <p class="muted" style="margin:.25rem 0 .75rem 0;">Create a wallet and read faucet rules.</p>
+          <div class="row">
+            <a href="/wallet/" role="button" class="btn-ghost">Open Quantara Wallet</a>
+            <a href="/faucet/" role="button" class="btn-ghost">View Faucet</a>
+            <a href="/" role="button" class="btn-ghost">Back to Home</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Referral / share -->
+      <section class="card" style="margin-top:1rem;">
+        <h2 style="margin:0 0 .5rem 0; font-size:1.1rem;">Invite friends</h2>
+        <p class="muted" style="margin:.25rem 0 .75rem 0;">
+          Share your link — everyone can join the Founding Members waitlist. Testnet tokens have no monetary value.
+        </p>
+
+        <div class="row">
+          <input type="text" id="refLink" aria-label="Your referral link" style="flex:1; min-width:260px;"
+                 value="" readonly>
+          <button id="copyBtn" class="btn-gold" type="button">Copy link</button>
+          <a id="shareX" role="button" class="btn-ghost" href="#" target="_blank" rel="noopener">Share on X</a>
+        </div>
+
+        <details style="margin-top:.75rem;">
+          <summary>How your link works</summary>
+          <p class="muted">We add a short referral code to the URL (e.g. <code>?ref=ABCDE1</code>) so we can attribute sign-ups. It’s optional, but helps us prioritize invites.</p>
+        </details>
+      </section>
+
+      <!-- What to expect -->
+      <section class="card" style="margin-top:1rem;">
+        <h2 style="margin:0 0 .5rem 0; font-size:1.1rem;">What happens next</h2>
+        <ul>
+          <li>You’ll get a <strong>72-hour heads-up</strong> with your access window.</li>
+          <li>On launch, open the wallet, copy your <strong>SS58=73</strong> address, and use the faucet.</li>
+          <li>Need help? Ping us in <strong>Discord</strong> — real humans will be online.</li>
+        </ul>
+      </section>
+
+      <footer class="muted" style="margin-top:1rem;">
+        © 2025 Quantara Technology LLC — Testnet tokens have no monetary value.
+      </footer>
+    </article>
+  </main>
+
+  <script>
+    // --- Lightweight referral system (client-side) ---
+    // 1) Try to read an existing code from localStorage (set here if missing).
+    // 2) Build a shareable link with ?ref=CODE
+    // 3) Wire "Copy" and "Share on X" buttons.
+
+    (function () {
+      const ORIGIN = window.location.origin || (window.location.protocol + '//' + window.location.host);
+      const HOME = ORIGIN + '/';
+      const STORAGE_KEY = 'quantara_ref_code';
+
+      function makeCode(len = 6) {
+        // URL-safe short code
+        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let out = '';
+        for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+        return out;
+      }
+
+      // Use existing or generate a new code
+      let code = localStorage.getItem(STORAGE_KEY);
+      if (!code) {
+        code = makeCode(6);
+        localStorage.setItem(STORAGE_KEY, code);
+      }
+
+      // Build link with ref=CODE (keep UTM passthrough minimal)
+      const shareUrl = new URL(HOME);
+      shareUrl.searchParams.set('ref', code);
+
+      // Populate UI
+      const refInput = document.getElementById('refLink');
+      const copyBtn = document.getElementById('copyBtn');
+      const shareX = document.getElementById('shareX');
+
+      if (refInput) refInput.value = shareUrl.toString();
+      if (copyBtn) {
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(shareUrl.toString());
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => copyBtn.textContent = 'Copy link', 1200);
+          } catch {
+            // fallback
+            refInput.select();
+            document.execCommand('copy');
+          }
+        });
+      }
+      if (shareX) {
+        const text = encodeURIComponent('I just joined the Quantara Devnet-0 waitlist. Be a Founding Member →');
+        const url = encodeURIComponent(shareUrl.toString());
+        shareX.href = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
+      }
+    })();
+  </script>
+</body>
+</html>

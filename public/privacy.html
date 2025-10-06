@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Privacy — Quantara</title>
+  <meta name="description" content="Privacy notice for the Quantara Devnet-0 waitlist, wallet preview, and faucet." />
+  <link rel="icon" href="/assets/favicon.ico" />
+  <!-- Minimal, accessible styles -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <style>
+    :root { --pico-primary: #f1c46b; }
+    body { background:#0a0b0d; color:#fff; }
+    main a { color:#f1c46b; }
+    .muted { color:#9aa0a6; }
+    header, footer { color:#9aa0a6; }
+    .card { background:#101217; border:1px solid #191e25; border-radius:16px; padding:1.25rem; }
+    hr { border-color:#191e25; }
+    code { background:#151922; border:1px solid #1c2230; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="muted" style="margin-top: 2rem;">
+      <small>Last updated: <time datetime="2025-10-01">1 Oct 2025</time></small>
+      <h1 style="color:#fff;margin:0.25rem 0 0.5rem">Privacy Notice</h1>
+      <p class="muted">Quantara Technology LLC (“<strong>Quantara</strong>”, “we”, “us”).</p>
+    </header>
+
+    <section class="card">
+      <h2>Scope</h2>
+      <p>This notice explains how we handle personal data for the <strong>Devnet-0 waitlist</strong>, the lightweight <strong>Quantara Wallet</strong> preview, and the <strong>Quantara Faucet</strong> (collectively, the “Services”). Testnet tokens have <strong>no monetary value</strong>.</p>
+    </section>
+
+    <section class="card">
+      <h2>Data we collect</h2>
+      <ul>
+        <li><strong>Waitlist form</strong> (you provide):
+          <ul>
+            <li>Email (required)</li>
+            <li>Role, experience, country/region</li>
+            <li>Discord handle, GitHub profile, referral code (optional)</li>
+          </ul>
+        </li>
+        <li><strong>Wallet preview</strong>:
+          <ul>
+            <li>Runs locally in your browser. Mnemonic/keys are generated client-side and are <strong>not sent to our servers</strong>.</li>
+            <li>We may log anonymized telemetry (page views, errors) if analytics are enabled.</li>
+          </ul>
+        </li>
+        <li><strong>Faucet</strong>:
+          <ul>
+            <li>SS58=73 address you submit to receive QTR (testnet)</li>
+            <li>Anti-abuse data (IP/network, user-agent, request counts, challenge results)</li>
+            <li>Server logs (timestamps, HTTP metadata)</li>
+          </ul>
+        </li>
+        <li><strong>Automatic</strong> (all pages): limited cookies or local storage to remember preferences and protect against abuse.</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>How we use data</h2>
+      <ul>
+        <li>Operate and secure the waitlist, wallet preview, and faucet</li>
+        <li>Send Devnet-0 updates and guides (you can unsubscribe anytime)</li>
+        <li>Prioritize builders/validators and manage faucet limits</li>
+        <li>Detect, prevent, and investigate spam or abuse</li>
+        <li>Aggregate analytics to improve docs, tooling, and reliability</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Legal bases (EEA/UK)</h2>
+      <ul>
+        <li><em>Consent</em> — marketing emails; optional analytics</li>
+        <li><em>Legitimate interests</em> — service security, fraud prevention, basic usage metrics</li>
+        <li><em>Contract</em> — providing the Services you request (e.g., processing a faucet claim)</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Retention</h2>
+      <ul>
+        <li>Waitlist records: until you unsubscribe or request deletion</li>
+        <li>Faucet logs/anti-abuse signals: typically <strong>30–90 days</strong>, longer if needed for security</li>
+        <li>Backups: limited-life, automatically purged on a rolling basis</li>
+      </ul>
+    </section>
+
+    <section class="card">
+      <h2>Security</h2>
+      <p>We use industry-standard controls (encryption in transit, access controls, logging). Keys created in the wallet preview remain in your browser; <strong>never share your mnemonic</strong>. We will <strong>never</strong> DM you for a seed phrase.</p>
+    </section>
+
+    <section class="card">
+      <h2>Vendors & transfers</h2>
+      <p>We rely on reputable processors to run a lightweight stack. Depending on your region, your data may be processed outside your country with appropriate safeguards.</p>
+      <ul>
+        <li>Hosting/CDN (e.g., Cloudflare, Vercel, or Netlify)</li>
+        <li>Form handling (e.g., Netlify Forms or equivalent)</li>
+        <li>Anti-bot (e.g., <strong>Cloudflare Turnstile</strong> or hCaptcha)</li>
+        <li>Email delivery (e.g., Mailgun/Postmark/SES)</li>
+        <li>Optional analytics (privacy-respecting, IP truncation where available)</li>
+      </ul>
+      <p class="muted">We’ll keep an up-to-date list of key sub-processors in the repository README or on this page.</p>
+    </section>
+
+    <section class="card">
+      <h2>Cookies & analytics</h2>
+      <p>We aim to minimize tracking. If analytics are enabled, we use cookieless or low-identifiability modes where possible. Anti-bot challenges may set cookies to prevent abuse.</p>
+    </section>
+
+    <section class="card">
+      <h2>Your choices & rights</h2>
+      <ul>
+        <li><strong>Unsubscribe</strong> from emails via the link in any message.</li>
+        <li><strong>Access/rectify/delete</strong> your personal data where applicable (GDPR/UK GDPR/CCPA/CPRA).</li>
+        <li><strong>Opt-out of sale/share</strong> (CPRA): we don’t sell personal information. If you believe otherwise, contact us.</li>
+        <li><strong>Appeal</strong> decisions or lodge a complaint with your local data authority.</li>
+      </ul>
+      <p>To exercise rights, email <a href="mailto:privacy@quantaratech.com">privacy@quantaratech.com</a> with the subject “Data Request”. We may ask you to verify your email.</p>
+    </section>
+
+    <section class="card">
+      <h2>Children</h2>
+      <p>The Services are for adults and not directed to children under 16. If you believe a minor joined the waitlist, contact us to remove the data.</p>
+    </section>
+
+    <section class="card">
+      <h2>Changes</h2>
+      <p>We may update this notice to reflect changes to our Services or law. We’ll adjust the “Last updated” date and, when appropriate, provide additional notice.</p>
+    </section>
+
+    <section class="card">
+      <h2>Contact</h2>
+      <p>Quantara Technology LLC<br />
+        Email: <a href="mailto:privacy@quantaratech.com">privacy@quantaratech.com</a><br />
+        Security reports: <a href="mailto:security@quantaratech.com">security@quantaratech.com</a>
+      </p>
+    </section>
+
+    <footer class="muted" style="margin: 2rem 0;">
+      <small>© 2025 Quantara Technology LLC — Testnet tokens have no monetary value.</small>
+    </footer>
+  </main>
+</body>
+</html>
