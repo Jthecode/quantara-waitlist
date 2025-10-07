@@ -7,6 +7,7 @@
 
   <meta name="description" content="Thanks for joining the Quantara Devnet-0 waitlist. Get your early-access window, faucet instructions, and next steps." />
   <meta name="theme-color" content="#0a0b0d">
+  <meta name="robots" content="noindex"> <!-- success pages shouldn't be indexed -->
   <link rel="icon" href="/assets/favicon.ico" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 
@@ -15,7 +16,7 @@
     body { background:#0a0b0d; color:#fff; }
     header, footer, .muted { color:#9aa0a6; }
     .card { background:#101217; border:1px solid #191e25; border-radius:16px; padding:1.25rem; }
-    .stack { display:grid; gap: .75rem; }
+    .stack { display:grid; gap:.75rem; }
     .row { display:flex; flex-wrap:wrap; gap:.5rem; align-items:center; }
     .pill { border:1px solid #191e25; background:#0c0e12; border-radius:999px; padding:.35rem .6rem; font-size:.8rem; color:#9aa0a6 }
     .btn-ghost { background:transparent; border:1px solid #2a3340; }
@@ -24,6 +25,7 @@
     .grid-2 { display:grid; gap:1rem; grid-template-columns: 1fr; }
     @media (min-width: 768px){ .grid-2{ grid-template-columns: 1fr 1fr; } }
     code { background:#151922; border:1px solid #1c2230; }
+    .sr-only { position:absolute !important; width:1px; height:1px; overflow:hidden; clip:rect(1px,1px,1px,1px); white-space:nowrap; border:0; padding:0; margin:-1px; }
   </style>
 </head>
 <body>
@@ -31,7 +33,7 @@
     <article class="card">
       <header class="row" style="justify-content: space-between;">
         <h1 style="margin:0">You're on the list 🎉</h1>
-        <span class="pill">Devnet-0 • SS58=73 • QTR (testnet)</span>
+        <span class="pill" aria-label="Network details">Devnet-0 • SS58=73 • QTR (testnet)</span>
       </header>
 
       <p class="muted">
@@ -40,19 +42,22 @@
       </p>
 
       <!-- Next steps -->
-      <section class="grid-2">
+      <section class="grid-2" aria-labelledby="next-steps">
+        <h2 id="next-steps" class="sr-only">Next steps</h2>
+
         <div class="card" style="padding:1rem;">
-          <h2 style="margin:0 0 .5rem 0; font-size:1.1rem;">Join the community</h2>
+          <h3 style="margin:0 0 .5rem 0; font-size:1.1rem;">Join the community</h3>
           <p class="muted" style="margin:.25rem 0 .75rem 0;">Get updates, support, and early meetups.</p>
           <div class="row">
-            <a href="#" role="button" class="btn-gold">Join Discord</a>
-            <a href="#" role="button" class="btn-ghost">Follow on X</a>
-            <a href="https://github.com/" target="_blank" role="button" class="btn-ghost">GitHub</a>
+            <!-- TODO: replace # with your real links -->
+            <a href="#" role="button" class="btn-gold" rel="noopener">Join Discord</a>
+            <a href="#" role="button" class="btn-ghost" rel="noopener">Follow on X</a>
+            <a href="https://github.com/" target="_blank" role="button" class="btn-ghost" rel="noopener noreferrer">GitHub</a>
           </div>
         </div>
 
         <div class="card" style="padding:1rem;">
-          <h2 style="margin:0 0 .5rem 0; font-size:1.1rem;">Be ready on day one</h2>
+          <h3 style="margin:0 0 .5rem 0; font-size:1.1rem;">Be ready on day one</h3>
           <p class="muted" style="margin:.25rem 0 .75rem 0;">Create a wallet and read faucet rules.</p>
           <div class="row">
             <a href="/wallet/" role="button" class="btn-ghost">Open Quantara Wallet</a>
@@ -63,28 +68,31 @@
       </section>
 
       <!-- Referral / share -->
-      <section class="card" style="margin-top:1rem;">
-        <h2 style="margin:0 0 .5rem 0; font-size:1.1rem;">Invite friends</h2>
+      <section class="card" style="margin-top:1rem;" aria-labelledby="invite-friends">
+        <h2 id="invite-friends" style="margin:0 0 .5rem 0; font-size:1.1rem;">Invite friends</h2>
         <p class="muted" style="margin:.25rem 0 .75rem 0;">
           Share your link — everyone can join the Founding Members waitlist. Testnet tokens have no monetary value.
         </p>
 
         <div class="row">
-          <input type="text" id="refLink" aria-label="Your referral link" style="flex:1; min-width:260px;"
-                 value="" readonly>
-          <button id="copyBtn" class="btn-gold" type="button">Copy link</button>
-          <a id="shareX" role="button" class="btn-ghost" href="#" target="_blank" rel="noopener">Share on X</a>
+          <label for="refLink" class="sr-only">Your referral link</label>
+          <input type="text" id="refLink" style="flex:1; min-width:260px;" value="" readonly inputmode="url">
+          <button id="copyBtn" class="btn-gold" type="button" aria-live="polite">Copy link</button>
+          <a id="shareX" role="button" class="btn-ghost" href="#" target="_blank" rel="noopener noreferrer">Share on X</a>
         </div>
 
         <details style="margin-top:.75rem;">
           <summary>How your link works</summary>
-          <p class="muted">We add a short referral code to the URL (e.g. <code>?ref=ABCDE1</code>) so we can attribute sign-ups. It’s optional, but helps us prioritize invites.</p>
+          <p class="muted">
+            We add a short referral code to the URL (e.g. <code>?ref=ABCDE1</code>) so we can attribute sign-ups.
+            If you arrived here from a submit redirect, we use your server-assigned code; otherwise we use your local code.
+          </p>
         </details>
       </section>
 
       <!-- What to expect -->
-      <section class="card" style="margin-top:1rem;">
-        <h2 style="margin:0 0 .5rem 0; font-size:1.1rem;">What happens next</h2>
+      <section class="card" style="margin-top:1rem;" aria-labelledby="what-next">
+        <h2 id="what-next" style="margin:0 0 .5rem 0; font-size:1.1rem;">What happens next</h2>
         <ul>
           <li>You’ll get a <strong>72-hour heads-up</strong> with your access window.</li>
           <li>On launch, open the wallet, copy your <strong>SS58=73</strong> address, and use the faucet.</li>
@@ -98,58 +106,83 @@
     </article>
   </main>
 
-  <script>
-    // --- Lightweight referral system (client-side) ---
-    // 1) Try to read an existing code from localStorage (set here if missing).
-    // 2) Build a shareable link with ?ref=CODE
-    // 3) Wire "Copy" and "Share on X" buttons.
+  <noscript>
+    <div class="container">
+      <p role="status">JavaScript is disabled. Copy your referral URL manually from the address bar.</p>
+    </div>
+  </noscript>
 
+  <script defer>
     (function () {
-      const ORIGIN = window.location.origin || (window.location.protocol + '//' + window.location.host);
+      const ORIGIN = location.origin || (location.protocol + '//' + location.host);
       const HOME = ORIGIN + '/';
       const STORAGE_KEY = 'quantara_ref_code';
 
+      // Prefer server-provided code from URL (?ref=..., or ?code=...) → keeps it stable with backend.
+      const params = new URLSearchParams(location.search);
+      const urlCode = (params.get('ref') || params.get('code') || '').trim();
+
+      // Fallback to previously saved local code
       function makeCode(len = 6) {
-        // URL-safe short code
         const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let out = '';
         for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
         return out;
       }
 
-      // Use existing or generate a new code
-      let code = localStorage.getItem(STORAGE_KEY);
-      if (!code) {
-        code = makeCode(6);
-        localStorage.setItem(STORAGE_KEY, code);
+      let localCode = localStorage.getItem(STORAGE_KEY) || '';
+      if (!localCode) {
+        localCode = makeCode(6);
+        localStorage.setItem(STORAGE_KEY, localCode);
       }
 
-      // Build link with ref=CODE (keep UTM passthrough minimal)
+      // Choose final code: URL wins; otherwise localStorage
+      const code = urlCode || localCode;
+
+      // If URL had a code, persist it so future visits stay consistent
+      if (urlCode && urlCode !== localCode) {
+        localStorage.setItem(STORAGE_KEY, urlCode);
+      }
+
+      // Build share URL with optional lightweight UTM tags for analytics
       const shareUrl = new URL(HOME);
       shareUrl.searchParams.set('ref', code);
+      shareUrl.searchParams.set('utm_source', 'referral');
+      shareUrl.searchParams.set('utm_medium', 'share');
+      shareUrl.searchParams.set('utm_campaign', 'waitlist');
 
       // Populate UI
       const refInput = document.getElementById('refLink');
       const copyBtn = document.getElementById('copyBtn');
-      const shareX = document.getElementById('shareX');
+      const shareX  = document.getElementById('shareX');
 
       if (refInput) refInput.value = shareUrl.toString();
+
       if (copyBtn) {
         copyBtn.addEventListener('click', async () => {
+          const txt = shareUrl.toString();
           try {
-            await navigator.clipboard.writeText(shareUrl.toString());
+            await navigator.clipboard.writeText(txt);
             copyBtn.textContent = 'Copied!';
-            setTimeout(() => copyBtn.textContent = 'Copy link', 1200);
           } catch {
-            // fallback
-            refInput.select();
-            document.execCommand('copy');
+            // Fallback for older browsers
+            try {
+              refInput.removeAttribute('readonly');
+              refInput.select();
+              document.execCommand('copy');
+              refInput.setAttribute('readonly','');
+              copyBtn.textContent = 'Copied!';
+            } catch {
+              alert('Copy failed. You can select the link and copy it manually.');
+            }
           }
+          setTimeout(() => (copyBtn.textContent = 'Copy link'), 1400);
         });
       }
+
       if (shareX) {
         const text = encodeURIComponent('I just joined the Quantara Devnet-0 waitlist. Be a Founding Member →');
-        const url = encodeURIComponent(shareUrl.toString());
+        const url  = encodeURIComponent(shareUrl.toString());
         shareX.href = `https://twitter.com/intent/tweet?text=${text}&url=${url}`;
       }
     })();

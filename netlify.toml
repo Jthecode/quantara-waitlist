@@ -1,9 +1,59 @@
+\# netlify.toml
+
 [build]
-publish = "public"
+  publish   = "public"
+  functions = "netlify/functions"
+
+# Non-secret defaults for prod builds (keep secrets in Netlify UI env vars)
+[build.environment]
+  NODE_VERSION  = "20"
+  NODE_ENV      = "production"
+  SITE_BASE_URL = "https://www.quantara-waitlist.com"
+  Q_RELEASE_AT  = "2025-11-30T17:00:00Z"
+
+############################################
+## Redirects → Netlify Functions (status=200)
+############################################
+
+# Waitlist API (frontend posts here)
+[[redirects]]
+  from   = "/api/waitlist"
+  to     = "/.netlify/functions/waitlist"
+  status = 200
+
+# Email verification (GET with ?token=…)
+[[redirects]]
+  from   = "/api/verify-email"
+  to     = "/.netlify/functions/verify-email"
+  status = 200
+
+# Optional: expose your Turnstile verifier at a nicer path
+[[redirects]]
+  from   = "/api/verify-turnstile"
+  to     = "/.netlify/functions/verify-turnstile"
+  status = 200
+
+# Optional health endpoint (if you add a function)
+[[redirects]]
+  from   = "/api/health"
+  to     = "/.netlify/functions/health"
+  status = 200
+
+############################################
+## Security headers
+############################################
 
 [[headers]]
-for = "/*"
-[headers.values]
-X-Frame-Options = "SAMEORIGIN"
-X-Content-Type-Options = "nosniff"
-Referrer-Policy = "strict-origin-when-cross-origin"
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+    Permissions-Policy = "geolocation=(), microphone=(), camera=(), interest-cohort=()"
+
+# (Optional) Cache static assets more aggressively
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

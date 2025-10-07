@@ -242,8 +242,16 @@
                          class="mt-1 w-full rounded-xl bg-black/40 border border-white/10 px-4 py-3" />
                 </div>
 
-                <!-- Turnstile widget -->
-                <div class="cf-turnstile mt-4" data-sitekey="YOUR_TURNSTILE_SITE_KEY" data-theme="dark" aria-label="Human verification"></div>
+                <!-- Turnstile widget (ADDED #2: data-callback) -->
+                
+                <div class="cf-turnstile mt-4"
+                  data-sitekey="0x4AAAAAAB5BBZiG4VTPYuEi"
+                  data-theme="dark"
+                  data-callback="onTurnstileToken"
+                  data-expired-callback="onTurnstileExpired"
+                  data-error-callback="onTurnstileError"
+                  aria-label="Human verification"></div>
+
 
                 <div class="mt-5 flex items-start gap-2 text-xs text-qmuted">
                   <input id="consent" type="checkbox" required class="mt-1" aria-describedby="consent-help"/>
@@ -252,7 +260,10 @@
                 <p id="consent-help" class="sr-only">Consent required to receive Devnet-0 updates by email.</p>
 
                 <div class="mt-5 grid sm:flex gap-3">
-                  <button type="submit" class="rounded-xl bg-qgold text-black font-semibold py-3 px-5 hover:opacity-90" aria-label="Submit and join the waitlist">
+                  <!-- Submit disabled until Turnstile gives a token (ADDED #3) -->
+                  <button id="join-submit" type="submit" disabled
+                          class="rounded-xl bg-qgold text-black font-semibold py-3 px-5 hover:opacity-90"
+                          aria-label="Submit and join the waitlist">
                     Join the Waitlist
                   </button>
                   <button type="button" id="share-ref" class="rounded-xl border border-qline px-5 py-3 hover:bg-white/5">
@@ -707,7 +718,7 @@ console.log(addr);</code></pre>
           <svg width="20" height="20" viewBox="0 0 245 240" fill="currentColor" aria-hidden="true"><path d="M104.4 104.9c-5.7 0-10.2 5-10.2 11.1 0 6.1 4.6 11.1 10.2 11.1 5.7 0 10.2-5 10.2-11.1 0-6.1-4.5-11.1-10.2-11.1zm36.2 0c-5.7 0-10.2 5-10.2 11.1 0 6.1 4.6 11.1 10.2 11.1 5.7 0 10.2-5 10.2-11.1 0-6.1-4.5-11.1-10.2-11.1z"/><path d="M189.5 20h-134C36.5 20 20 36.5 20 55.5v129C20 203.5 36.5 220 55.5 220h114l-5.4-18.8 13.1 12.1 12.4 11.5 22.9 21.2V55.5C213.5 36.5 197 20 178.5 20zm-31 135.4s-2.9-3.5-5.3-6.5c10.5-3 14.5-9.6 14.5-9.6a46.4 46.4 0 01-9.2 4.7c-3.9 1.6-7.7 2.7-11.4 3.3-7.6 1.4-14.6 1-20.5-.1-4.5-.9-8.4-2-11.6-3.3-1.8-.7-3.7-1.5-5.6-2.6-.2-.1-.3-.2-.5-.3l-.1-.1s3.9 6.5 14.2 9.6c-2.4 3-5.4 6.6-5.4 6.6-17.9-.6-24.7-12.3-24.7-12.3 0-26 11.6-47.1 11.6-47.1 11.6-8.6 22.7-8.3 22.7-8.3l.8 1c-14.6 4.2-21.3 10.6-21.3 10.6s1.8-.9 4.7-2.1c8.6-3.8 15.4-4.9 18.2-5.1.5-.1.9-.1 1.4-.1 5-.7 10.5-.9 16.3-.2 7.7.9 15.9 3.2 24.2 7.9 0 0-6.4-6.1-20.3-10.3l1.1-1.3s11.1-.3 22.7 8.3c0 0 11.6 21.1 11.6 47.1 0 0-6.9 11.7-24.8 12.3z"/></svg>
         </a>
         <a href="#" aria-label="GitHub" class="hover:text-white">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.9 5.3.9 11.6c0 4.9 3.2 9 7.6 10.5.6.1.8-.3.8-.6v-2.1c-3.1.7-3.8-1.3-3.8-1.3-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 .1.6 1.6 2.5 2 1.4.3 2.9-.1 3.6-.9.1-1 .5-1.7 1-2.1-2.5-.3-5.1-1.3-5.1-5.8 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.3 11.3 0 016 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.5-2.6 5.5-5.1 5.8.6.5 1.1 1.5 1.1 3v4.5c0 .3.2.7.8.6 4.4-1.4 7.6-5.6 7.6-10.5C23.1 5.3 18.3.5 12 .5z"/></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.7.5.9 5.3.9 11.6c0 4.9 3.2 9 7.6 10.5.6.1.8-.3.8-.6v-2.1c-3.1.7-3.8-1.3-3.8-1.3-.5-1.3-1.2-1.6-1.2-1.6-1-.7.1-.7.1-.7 1.1.1 1.7 1.1 1.7 1.1 1 .1.6 1.6 2.5 2 1.4.3 2.9-.1 3.6-.9.1-1 .5-1.7 1-2.1-2.5-.3-5.1-1.3-5.1-5.8 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.6.1-3.2 0 0 1-.3 3.3 1.2a11.3 11.3 0 016 0c2.2-1.5 3.2-1.2 3.2-1.2.6 1.6.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.5-2.6 5.5-5.1 5.8.6.5 1.1 1.5 1.1 3v 4.5c0 .3.2.7.8.6 4.4-1.4 7.6-5.6 7.6-10.5C23.1 5.3 18.3.5 12 .5z"/></svg>
         </a>
       </div>
     </div>
@@ -881,9 +892,63 @@ console.log(addr);</code></pre>
       }, { threshold:.25 });
       io.observe(wrap);
 
-      // Optional: pull user's points from localStorage (preview mock)
+            // Optional: pull user's points from localStorage (preview mock)
       const myPts = +(localStorage.getItem('q_points') || 0);
       document.getElementById('my-points')?.replaceChildren(document.createTextNode(String(myPts)));
+    })();
+
+    // ===== Cloudflare Turnstile: token handling & submit guard =====
+    (function () {
+      const form = document.forms.waitlist;
+      if (!form) return;
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const TOKEN_NAME = 'cf-turnstile-response';
+
+      // Helper to get token (Turnstile auto-injects a hidden input with this name)
+      const getToken = () => form.querySelector(`input[name="${TOKEN_NAME}"]`)?.value || '';
+
+      // Start disabled until we have a token
+      if (submitBtn) submitBtn.disabled = true;
+
+      // Watch the form for Turnstile's hidden input to appear/populate
+      const mo = new MutationObserver(() => {
+        const hasToken = !!getToken();
+        if (submitBtn) submitBtn.disabled = !hasToken;
+      });
+      mo.observe(form, { subtree: true, childList: true, attributes: true });
+
+      // Optional: if you add data-callback/expired-callback/error-callback to the widget,
+      // these globals will be invoked by Turnstile:
+      window.onTurnstileToken = function (token) {
+        let input = form.querySelector(`input[name="${TOKEN_NAME}"]`);
+        if (!input) {
+          input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = TOKEN_NAME;
+          form.appendChild(input);
+        }
+        input.value = token || '';
+        if (submitBtn) submitBtn.disabled = !token;
+      };
+      window.onTurnstileExpired = function () {
+        const input = form.querySelector(`input[name="${TOKEN_NAME}"]`);
+        if (input) input.value = '';
+        if (submitBtn) submitBtn.disabled = true;
+      };
+      window.onTurnstileError = function () {
+        if (submitBtn) submitBtn.disabled = true;
+      };
+
+      // Final guard on submit
+      form.addEventListener('submit', (e) => {
+        if (!getToken()) {
+          e.preventDefault();
+          alert('Please complete the human check before submitting.');
+          try { turnstile?.reset?.(); } catch {}
+          return false;
+        }
+      });
     })();
 
     // Referral & UTM capture
@@ -895,11 +960,13 @@ console.log(addr);</code></pre>
 
       const form = document.forms.waitlist;
       if (!form) return;
-      ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k=>{
+      ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k => {
         const v = url.searchParams.get(k);
         if (v) {
           const el = document.createElement('input');
-          el.type='hidden'; el.name=k; el.value=v.slice(0,64);
+          el.type = 'hidden';
+          el.name = k;
+          el.value = v.slice(0, 64);
           form.appendChild(el);
         }
       });
@@ -907,3 +974,5 @@ console.log(addr);</code></pre>
   </script>
 </body>
 </html>
+
+

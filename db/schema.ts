@@ -3,95 +3,159 @@
    (c) 2025 Quantara Technology LLC
    File: db/schema.ts
    Purpose:
-     - Defines tables for: user_account, referral_event, faucet_claim
-     - JSONB UTM object, email/turnstile flags, referral indices
+     - user_account, referral_event, faucet_claim
+     - JSONB UTM, email/turnstile flags, referral indices
+     - FK constraints + case-insensitive email unique index
    ========================================================================== */
 
 import {
   pgTable,
   bigserial,
+  bigint,
   text,
   boolean,
   timestamp,
   jsonb,
   index,
   uniqueIndex,
-} from 'drizzle-orm/pg-core';
+  pgEnum,
+  foreignKey, // for self-referencing FK
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// USERS
-// ─────────────────────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
+   Enums
+   ────────────────────────────────────────────────────────────────────────── */
+export const referralKind = pgEnum("referral_kind", ["CLICK", "SIGNUP", "VERIFIED"]);
+export const faucetStatus = pgEnum("faucet_status", ["PENDING", "SENT", "REJECTED"]);
+
+/* ────────────────────────────────────────────────────────────────────────────
+   USERS
+   ────────────────────────────────────────────────────────────────────────── */
 export const userAccount = pgTable(
-  'user_account',
+  "user_account",
   {
-    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-    email: text('email').notNull(),
-    role: text('role'),               // 'Enthusiast' | 'Creator' | 'Builder' | ...
-    experience: text('experience'),   // 'New' | 'Intermediate' | 'Advanced'
-    discord: text('discord'),
-    github: text('github'),
-    country: text('country'),
-    referralCode: text('referral_code'),
-    referredBy: bigserial('referred_by', { mode: 'bigint' }),
-    emailVerified: boolean('email_verified').notNull().default(false),
-    turnstileOk: boolean('turnstile_ok').notNull().default(false),
-    // Store all UTM fields in one JSONB blob (e.g., { source, medium, campaign, content, term })
-    utm: jsonb('utm').notNull().default({}),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    id: bigserial("id", { mode: "bigint" }).primaryKey(),
+
+    // NOTE: email unique is enforced on LOWER(email) via an expression index below
+    email: text("email").notNull(),
+
+    role: text("role"),               // 'Enthusiast' | 'Creator' | 'Builder' | ...
+    experience: text("experience"),   // 'New' | 'Intermediate' | 'Advanced'
+    discord: text("discord"),
+    github: text("github"),
+    country: text("country"),
+
+    // Stable referral code (nullable until generated). Unique index allows multiple NULLs.
+    referralCode: text("referral_code"),
+
+    // Self-referencing FK column (nullable) — FK is defined in the table callback to avoid circular reference
+    referredBy: bigint("referred_by", { mode: "bigint" }),
+
+    emailVerified: boolean("email_verified").notNull().default(false),
+    turnstileOk: boolean("turnstile_ok").notNull().default(false),
+
+    // Store all UTM fields in one JSONB blob
+    utm: jsonb("utm")
+      .$type<{ source?: string; medium?: string; campaign?: string; content?: string; term?: string }>()
+      .notNull()
+      .default({}),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    emailIdx: uniqueIndex('user_account_email_uq').on(t.email),
-    referralCodeIdx: uniqueIndex('user_account_referral_code_uq').on(t.referralCode),
-    referredByIdx: index('user_account_referred_by_idx').on(t.referredBy),
-  }),
+    // Case-insensitive UNIQUE on email
+    emailLowerUq: uniqueIndex("user_account_email_lower_uq").on(sql`lower(${t.email})`),
+
+    // Helpful non-unique index for CI lookups
+    emailLowerIdx: index("user_account_email_lower_idx").on(sql`lower(${t.email})`),
+
+    referralCodeUq: uniqueIndex("user_account_referral_code_uq").on(t.referralCode),
+
+    referredByIdx: index("user_account_referred_by_idx").on(t.referredBy),
+
+    // ✅ self-referencing FK defined with direct object (no callback)
+    referredByFk: foreignKey({
+      columns: [t.referredBy],
+      foreignColumns: [t.id],
+      name: "user_account_referred_by_fk",
+    })
+      .onUpdate("cascade")
+      .onDelete("set null"),
+  })
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-/** REFERRALS: Track referral lifecycle events.
- *  kind: 'CLICK' | 'SIGNUP' | 'VERIFIED' (you can expand later)
- */
-// ─────────────────────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
+   REFERRALS: Track referral lifecycle events.
+   kind: 'CLICK' | 'SIGNUP' | 'VERIFIED'
+   ────────────────────────────────────────────────────────────────────────── */
 export const referralEvent = pgTable(
-  'referral_event',
+  "referral_event",
   {
-    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-    referrerId: bigserial('referrer_id', { mode: 'bigint' }).notNull(),
-    refereeId: bigserial('referee_id', { mode: 'bigint' }).notNull(),
-    kind: text('kind').notNull(), // 'CLICK' | 'SIGNUP' | 'VERIFIED'
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    id: bigserial("id", { mode: "bigint" }).primaryKey(),
+
+    // Proper FKs to user_account
+    referrerId: bigint("referrer_id", { mode: "bigint" })
+      .notNull()
+      .references(() => userAccount.id, { onDelete: "cascade", onUpdate: "cascade" }),
+
+    refereeId: bigint("referee_id", { mode: "bigint" })
+      .notNull()
+      .references(() => userAccount.id, { onDelete: "cascade", onUpdate: "cascade" }),
+
+    kind: referralKind("kind").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    byReferrerIdx: index('ref_event_referrer_idx').on(t.referrerId),
-    byRefereeIdx: index('ref_event_referee_idx').on(t.refereeId),
-  }),
+    byReferrerIdx: index("ref_event_referrer_idx").on(t.referrerId),
+    byRefereeIdx: index("ref_event_referee_idx").on(t.refereeId),
+    byKindIdx: index("ref_event_kind_idx").on(t.kind),
+
+    // Prevent duplicates like (referrer, referee, 'JOINED') being inserted twice
+    uniqueTriplet: uniqueIndex("ref_event_referrer_referee_kind_uq").on(
+      t.referrerId,
+      t.refereeId,
+      t.kind
+    ),
+  })
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FAUCET CLAIMS
-// ─────────────────────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
+   FAUCET CLAIMS
+   ────────────────────────────────────────────────────────────────────────── */
 export const faucetClaim = pgTable(
-  'faucet_claim',
+  "faucet_claim",
   {
-    id: bigserial('id', { mode: 'bigint' }).primaryKey(),
-    userId: bigserial('user_id', { mode: 'bigint' }),
-    ss58Address: text('ss58_address').notNull(),
-    ipHash: text('ip_hash').notNull(), // salted hash; do not store raw IP
-    amountQtr: text('amount_qtr').notNull(), // store as text for 12-decimal token
-    status: text('status').notNull(), // 'PENDING' | 'SENT' | 'REJECTED'
-    reason: text('reason'),
-    txHash: text('tx_hash'),
-    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    id: bigserial("id", { mode: "bigint" }).primaryKey(),
+
+    userId: bigint("user_id", { mode: "bigint" })
+      .references(() => userAccount.id, { onDelete: "set null", onUpdate: "cascade" }),
+
+    ss58Address: text("ss58_address").notNull(), // optionally enforce min length in app layer
+
+    // Store salted hash, NOT raw IP. Compute in app layer.
+    ipHash: text("ip_hash").notNull(),
+
+    // QTR uses 12 decimals → store as text for exactness (e.g., "100.000000000000")
+    amountQtr: text("amount_qtr").notNull(),
+
+    status: faucetStatus("status").notNull(),
+    reason: text("reason"),
+    txHash: text("tx_hash"),
+
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => ({
-    byUserIdx: index('faucet_claim_user_idx').on(t.userId),
-    byAddrIdx: index('faucet_claim_addr_idx').on(t.ss58Address),
-    byStatusIdx: index('faucet_claim_status_idx').on(t.status),
-  }),
+    byUserIdx: index("faucet_claim_user_idx").on(t.userId),
+    byAddrIdx: index("faucet_claim_addr_idx").on(t.ss58Address),
+    byStatusIdx: index("faucet_claim_status_idx").on(t.status),
+    byTxIdx: index("faucet_claim_tx_idx").on(t.txHash),
+  })
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpful type exports (use in API routes/services)
-// ─────────────────────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
+   Helpful type exports
+   ────────────────────────────────────────────────────────────────────────── */
 export type UserAccount = typeof userAccount.$inferSelect;
 export type NewUserAccount = typeof userAccount.$inferInsert;
 

@@ -7,22 +7,34 @@
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { sql } from 'drizzle-orm';
-import { getDb } from '../db/client.node.js'; // ← IMPORTANT: .js for NodeNext/ESM
+import { getDb } from '../db/client.serverless.js'; // ✅ your Neon serverless client (.js for NodeNext)
 
-// Simple CORS helper
-function setCors(res: VercelResponse) {
-  res.setHeader('Access-Control-Allow-Origin', process.env.APP_URL ?? '*');
+/** CORS: allow a comma-separated list in ALLOWED_ORIGINS (fallback: APP_URL or '*') */
+function setCors(req: VercelRequest, res: VercelResponse) {
+  const allowEnv =
+    process.env.ALLOWED_ORIGINS ||
+    process.env.CORS_ALLOWED_ORIGINS ||
+    process.env.APP_URL ||
+    '*';
+  const list = allowEnv.split(',').map(s => s.trim()).filter(Boolean);
+  const origin = (req.headers.origin as string) || '';
+  const allowedOrigin = list.includes('*')
+    ? origin || '*'
+    : (list.includes(origin) ? origin : list[0] || '*');
+
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
-// Normalize drizzle execute result (array for neon-http, { rows } for pg)
+/** Normalize drizzle execute result (array for neon-http, { rows } for pg) */
 function getRows(execResult: any) {
   return Array.isArray(execResult) ? execResult : execResult?.rows;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  setCors(res);
+  setCors(req, res);
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'GET') {
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -32,24 +44,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const db = await getDb();
 
     // Optional time window filter: ?window=week|month|all (default: week)
-    const windowQ = (req.query.window as string)?.toLowerCase() ?? 'week';
+    const windowQ = (req.query.window as string | undefined)?.toLowerCase() ?? 'week';
     const windowSql =
       windowQ === 'month'
         ? sql`date_trunc('month', now())`
         : windowQ === 'all'
         ? sql`to_timestamp(0)` // epoch start = all-time
-        : sql`date_trunc('week', now())`; // default week
+        : sql`date_trunc('week', now())`; // default: week
 
-    // Compute points (VERIFIED referrals) and mask email for public display
+    // Points: count VERIFIED referrals within window; mask email in public output
     const q = sql<{ referral_code: string; name: string; points: number }>`
       SELECT
         u.referral_code,
         left(u.email, 3) || '***' AS name,
-        COALESCE(COUNT(*) FILTER (WHERE r.kind = 'VERIFIED'), 0)::int AS points
+        COALESCE(
+          COUNT(*) FILTER (WHERE r.kind = 'VERIFIED' AND r.created_at >= ${windowSql}),
+          0
+        )::int AS points
       FROM user_account u
       LEFT JOIN referral_event r
         ON r.referrer_id = u.id
-       AND r.created_at >= ${windowSql}
       GROUP BY u.id
       ORDER BY points DESC NULLS LAST, u.created_at ASC
       LIMIT 20
@@ -58,12 +72,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const execResult = await db.execute(q);
     const rows = getRows(execResult) ?? [];
 
-    // Cache briefly (public)
+    // Brief public cache; SWR for speed
     res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=60');
 
     return res.status(200).json({ ok: true, data: rows, window: windowQ });
   } catch (err) {
-    console.error('leaderboard error:', err);
+    console.error('[leaderboard] error:', err);
     return res.status(500).json({ ok: false, error: 'Internal error' });
   }
 }

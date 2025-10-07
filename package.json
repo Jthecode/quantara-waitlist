@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Static landing page + form for the Quantara Devnet-0 waitlist.",
-  "main": "index.js",
+  "private": true,
   "scripts": {
-    "dev": "tsx watch scripts/dev.ts",
-    "add:headers": "tsx scripts/add-header.ts",
+    "dev:vercel": "vercel dev",
+    "dev": "npm run typecheck && npm run dev:vercel",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -26,9 +26,14 @@
   },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^24.7.0",
     "@vercel/node": "^3.2.0",
     "drizzle-kit": "^0.31.5",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vercel": "^48.2.0"
+  },
+  "engines": {
+    "node": ">=18.17"
   }
 }

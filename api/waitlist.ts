@@ -2,59 +2,53 @@
    Quantara Devnet-0 • internal use only
    (c) 2025 Quantara Technology LLC
    File: api/waitlist.ts
-
    Purpose:
      Accepts waitlist joins, verifies Cloudflare Turnstile, upserts user,
-     records referral JOINED events, and returns a short-lived email-verify JWT.
-
-   Security notes:
-     - CORS is limited to APP_URL (comma-separated list supported) or "*"
-     - Turnstile required; rejects if verification fails
-     - No sensitive data returned in response
+     records referral SIGNUP events, and returns a short-lived email-verify JWT.
    ========================================================================== */
 
-import type { VercelRequest, VercelResponse } from '@vercel/node';
-import 'dotenv/config';
-import { z } from 'zod';
-import jwt from 'jsonwebtoken';
-import { sql } from 'drizzle-orm';
-import { getDb } from '../db/client.serverless.js'; // or: '../db/client.node.js'
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+import "dotenv/config";
+import { z } from "zod";
+import jwt from "jsonwebtoken";
+import { sql } from "drizzle-orm";
+import { getDb } from "../db/client.serverless.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// CORS helpers
+// CORS
 // ─────────────────────────────────────────────────────────────────────────────
 function getAllowedOrigins(): string[] {
-  const raw = process.env.APP_URL ?? '*';
-  return raw === '*' ? ['*'] : raw.split(',').map((s) => s.trim()).filter(Boolean);
+  const raw = process.env.APP_URL ?? "*";
+  return raw === "*" ? ["*"] : raw.split(",").map((s) => s.trim()).filter(Boolean);
 }
-
 function setCors(req: VercelRequest, res: VercelResponse) {
   const origins = getAllowedOrigins();
-  const requestOrigin = (req.headers.origin as string) || '';
+  const requestOrigin = (req.headers.origin as string) || "";
   const allow =
-    origins.includes('*') || origins.includes(requestOrigin) ? requestOrigin || origins[0] : origins[0];
-
-  res.setHeader('Vary', 'Origin');
-  res.setHeader('Access-Control-Allow-Origin', allow || '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Max-Age', '600');
+    origins.includes("*") || origins.includes(requestOrigin)
+      ? requestOrigin || origins[0]
+      : origins[0];
+  res.setHeader("Vary", "Origin");
+  res.setHeader("Access-Control-Allow-Origin", allow || "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Max-Age", "600");
 }
 
-// Env warnings (non-fatal, but useful in dev)
-(['DATABASE_URL', 'JWT_SECRET', 'TURNSTILE_SECRET_KEY'] as const).forEach((k) => {
+// Env warnings (handy in dev)
+(["DATABASE_URL", "JWT_SECRET", "TURNSTILE_SECRET_KEY"] as const).forEach((k) => {
   if (!process.env[k]) console.warn(`[waitlist] missing env ${k}`);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Validation schema
+// Validation
 // ─────────────────────────────────────────────────────────────────────────────
 const JoinSchema = z.object({
   email: z.string().email(),
   role: z.string().min(1).max(40),
-  experience: z.enum(['New', 'Intermediate', 'Advanced']).optional(),
+  experience: z.enum(["New", "Intermediate", "Advanced"]).optional(),
   discord: z.string().max(80).optional(),
-  github: z.string().url().optional(),
+  github: z.string().max(120).optional(),
   country: z.string().max(80).optional(),
   referral: z.string().max(64).optional(),
   referral_auto: z.string().max(64).optional(),
@@ -63,42 +57,40 @@ const JoinSchema = z.object({
   utm_campaign: z.string().max(64).optional(),
   utm_content: z.string().max(64).optional(),
   utm_term: z.string().max(64).optional(),
-  // Cloudflare Turnstile token (from <form> or fetch)
-  turnstileToken: z.string().min(5),
+  // Cloudflare Turnstile token (any of these fields)
+  turnstileToken: z.string().min(5).optional(),
+  ["cf-turnstile-response"]: z.string().min(5).optional(),
+  cf_turnstile_response: z.string().min(5).optional(),
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Turnstile verify (with dev bypass)
 // ─────────────────────────────────────────────────────────────────────────────
 async function verifyTurnstile(token: string, ip?: string) {
-  if (process.env.NODE_ENV !== 'production' && token === 'TEST_BYPASS') return true;
-
-  const secret = process.env.TURNSTILE_SECRET_KEY || '';
+  if (process.env.NODE_ENV !== "production" && token === "TEST_BYPASS") return true;
+  const secret = process.env.TURNSTILE_SECRET_KEY || "";
   if (!secret) return false;
 
   const form = new URLSearchParams();
-  form.set('secret', secret);
-  form.set('response', token);
-  if (ip) form.set('remoteip', ip);
+  form.set("secret", secret);
+  form.set("response", token);
+  if (ip) form.set("remoteip", ip);
 
-  const r = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
+  const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
     body: form,
   });
-
   if (!r.ok) return false;
-  const data = (await r.json()) as { success: boolean; ['error-codes']?: string[] };
-  return data.success === true;
+  const data = await r.json().catch(() => ({} as any));
+  return !!(data as any)?.success;
 }
 
 // Helpers
 function makeReferralCode(email: string) {
-  const seed = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '').slice(0, 6).toUpperCase();
+  const seed = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
   return `${seed}${rand}`;
 }
-
-// Normalize drizzle execute result (array or { rows })
 function getRows(execResult: any) {
   return Array.isArray(execResult) ? execResult : execResult?.rows;
 }
@@ -108,40 +100,54 @@ function getRows(execResult: any) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(req, res);
-  if (req.method === 'OPTIONS') return res.status(204).end();
-  if (req.method !== 'POST') {
-    return res.status(405).json({ ok: false, error: 'Method not allowed' });
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") {
+    return res.status(405).json({ ok: false, error: "Method not allowed" });
   }
 
   try {
-    const raw = typeof req.body === 'string' ? JSON.parse(req.body) : req.body ?? {};
+    // Safe body parse (prevents JSON parse errors on empty/invalid bodies)
+    let raw: any = {};
+    if (typeof req.body === "string") {
+      const t = req.body.trim();
+      if (t.startsWith("{") || t.startsWith("[")) {
+        try { raw = JSON.parse(t); } catch { raw = {}; }
+      }
+    } else if (req.body && typeof req.body === "object") {
+      raw = req.body;
+    }
 
     const parsed = JoinSchema.safeParse({
       ...raw,
-      turnstileToken: raw['cf-turnstile-response'] || raw['turnstileToken'] || raw['token'],
+      turnstileToken:
+        raw["cf-turnstile-response"] ||
+        raw["cf_turnstile_response"] ||
+        raw["turnstileToken"] ||
+        raw["token"],
     });
-
     if (!parsed.success) {
       return res
         .status(400)
-        .json({ ok: false, error: 'Invalid payload', details: parsed.error.flatten() });
+        .json({ ok: false, error: "Invalid payload", details: parsed.error.flatten() });
     }
 
     const data = parsed.data;
-
+    const token =
+      data["cf-turnstile-response"] || data["cf_turnstile_response"] || data.turnstileToken || "";
     const ip =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      (req.headers['x-real-ip'] as string) ||
+      (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
+      (req.headers["x-real-ip"] as string) ||
       undefined;
 
-    const human = await verifyTurnstile(data.turnstileToken, ip);
-    if (!human) return res.status(401).json({ ok: false, error: 'Human verification failed' });
+    const human = await verifyTurnstile(token, ip);
+    if (!human) return res.status(401).json({ ok: false, error: "Human verification failed" });
 
     const db = await getDb();
 
-    const refCode = data.referral?.trim() || data.referral_auto?.trim() || null;
+    const email = data.email.toLowerCase().trim();
+    const refCodeIn = data.referral?.trim() || data.referral_auto?.trim() || null;
 
-    // Build UTM JSON client-side and pass as a single ::jsonb param (avoids 42P18 inference)
+    // Build UTM JSON and strip nulls
     const utmPayload = {
       source: data.utm_source ?? null,
       medium: data.utm_medium ?? null,
@@ -151,65 +157,118 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
     const utmJson = sql`jsonb_strip_nulls(${JSON.stringify(utmPayload)}::jsonb)`;
 
-    // Upsert user. Keep/merge referral_code + UTM JSON.
-    // UTM merge rule: existing keys stay unless new non-null provided (jsonb_strip_nulls + ||).
-    const upsertUser = sql<{ id: string; email: string; referral_code: string }>`
-      WITH ins AS (
-        INSERT INTO user_account (
-          email, role, experience, discord, github, country, referral_code, utm
-        )
-        VALUES (
-          ${data.email}, ${data.role}, ${data.experience ?? null}, ${data.discord ?? null},
-          ${data.github ?? null}, ${data.country ?? null}, ${makeReferralCode(data.email)},
-          ${utmJson}
-        )
-        ON CONFLICT (email)
-        DO UPDATE SET
-          role = EXCLUDED.role,
-          experience = EXCLUDED.experience,
-          discord = EXCLUDED.discord,
-          github = EXCLUDED.github,
-          country = EXCLUDED.country,
-          -- merge UTM JSON, do not overwrite with nulls
-          utm = jsonb_strip_nulls(user_account.utm || EXCLUDED.utm)
-        RETURNING id, email, referral_code
-      )
-      SELECT id, email, referral_code FROM ins
+    // 1) Look up existing user by case-insensitive email
+    const existingQ = sql<{ id: string; email: string; referral_code: string | null }>`
+      SELECT id, email, referral_code
+        FROM user_account
+       WHERE lower(email) = ${email}
+       LIMIT 1
     `;
+    const existingRows = getRows(await db.execute(existingQ));
+    const existing = existingRows?.[0] || null;
 
-    const execIns: any = await db.execute(upsertUser);
-    const insRows = getRows(execIns);
-    const user = insRows?.[0];
-    if (!user) throw new Error('Failed to upsert user');
+    // We'll populate this and return it
+    let user: { id: string; email: string; referral_code: string };
 
-    // Record referral JOINED if refCode present and not self-referral
-    if (refCode) {
+    if (existing) {
+      // 2a) UPDATE path — merge fields, merge UTM (existing || new)
+      const updateQ = sql<{ id: string; email: string; referral_code: string | null }>`
+        UPDATE user_account
+           SET role = ${data.role},
+               experience = ${data.experience ?? null},
+               discord = ${data.discord ?? null},
+               github = ${data.github ?? null},
+               country = ${data.country ?? null},
+               utm = jsonb_strip_nulls(user_account.utm || ${utmJson})
+         WHERE id = ${existing.id}
+     RETURNING id, email, referral_code
+      `;
+      const updRows = getRows(await db.execute(updateQ));
+      const current =
+        updRows?.[0] ??
+        { id: existing.id, email: existing.email, referral_code: existing.referral_code };
+
+      // Ensure referral code exists
+      let rc = current.referral_code ?? "";
+      if (!rc) {
+        for (let i = 0; i < 3 && !rc; i++) {
+          const candidate = makeReferralCode(email);
+          try {
+            const setCode = sql<{ referral_code: string }>`
+              UPDATE user_account
+                 SET referral_code = ${candidate}
+               WHERE id = ${current.id}
+           RETURNING referral_code
+            `;
+            const setRows = getRows(await db.execute(setCode));
+            rc = setRows?.[0]?.referral_code || "";
+          } catch (e: any) {
+            const msg = String(e?.message || e);
+            if (/\bunique\b/i.test(msg) && /\breferral_code\b/i.test(msg)) continue;
+            throw e;
+          }
+        }
+      }
+
+      user = { id: current.id, email: current.email, referral_code: rc || makeReferralCode(email) };
+    } else {
+      // 2b) INSERT path — retry referral_code on collision
+      let inserted: { id: string; email: string; referral_code: string } | null = null;
+      for (let i = 0; i < 3 && !inserted; i++) {
+        const candidateCode = makeReferralCode(email);
+        const insertQ = sql<{ id: string; email: string; referral_code: string }>`
+          INSERT INTO user_account (
+            email, role, experience, discord, github, country, referral_code, utm
+          )
+          VALUES (
+            ${email}, ${data.role}, ${data.experience ?? null}, ${data.discord ?? null},
+            ${data.github ?? null}, ${data.country ?? null}, ${candidateCode}, ${utmJson}
+          )
+          RETURNING id, email, referral_code
+        `;
+        try {
+          const insRows = getRows(await db.execute(insertQ));
+          inserted = insRows?.[0] || null;
+        } catch (e: any) {
+          const msg = String(e?.message || e);
+          if (/\bunique\b/i.test(msg) && /\breferral_code\b/i.test(msg)) continue; // regenerate and retry
+          throw e;
+        }
+      }
+      if (!inserted) throw new Error("Failed to insert user");
+      user = inserted;
+    }
+
+    // 3) Log referral SIGNUP if present (not self)
+    if (refCodeIn) {
       const logReferral = sql`
         INSERT INTO referral_event (referrer_id, referee_id, kind)
-        SELECT u1.id, u2.id, 'JOINED'
-        FROM user_account u1
-        JOIN user_account u2 ON u2.email = ${user.email}
-        WHERE u1.referral_code = ${refCode}
-          AND u1.id <> u2.id
+        SELECT u1.id, u2.id, 'SIGNUP'
+          FROM user_account u1
+          JOIN user_account u2 ON lower(u2.email) = ${email}
+         WHERE u1.referral_code = ${refCodeIn}
+           AND u1.id <> u2.id
         ON CONFLICT DO NOTHING
       `;
       await db.execute(logReferral);
     }
 
-    const token = jwt.sign(
-      { sub: user.id, email: user.email, kind: 'verify-email' },
+    // 4) Short-lived JWT for email verification (HS256)
+    const verifyToken = jwt.sign(
+      { sub: user.id, email: user.email, typ: "email-verify" },
       process.env.JWT_SECRET as string,
-      { expiresIn: '2d' }
+      { expiresIn: "2d", algorithm: "HS256", issuer: "quantara", audience: "user" }
     );
 
-    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader("Cache-Control", "no-store");
     return res.status(200).json({
       ok: true,
+      code: user.referral_code,
       user: { email: user.email, referral_code: user.referral_code },
-      verifyToken: token,
+      verifyToken,
     });
   } catch (err) {
-    console.error('[waitlist] error:', err);
-    return res.status(500).json({ ok: false, error: 'Internal error' });
+    console.error("[waitlist] error:", err);
+    return res.status(500).json({ ok: false, error: "Internal error" });
   }
 }

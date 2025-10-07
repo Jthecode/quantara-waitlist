@@ -3,40 +3,55 @@
  * (c) 2025 Quantara Technology LLC
  * File: api/verify-email.ts
  *
- * Purpose:
- *   Confirms a user's email via JWT token and logs a `VERIFIED` referral_event
- *   (so referrers earn points on the leaderboard). Idempotent.
+ * Confirms a user's email via JWT token, logs a `VERIFIED` referral_event,
+ * and redirects (302) to /success.html?ref=<code> (or ?next=<path>).
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import 'dotenv/config';
 import jwt from 'jsonwebtoken';
 import { sql } from 'drizzle-orm';
-import { getDb } from '../db/client.serverless.js'; // ← ESM/NodeNext requires .js
+import { getDb } from '../db/client.serverless.js';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CORS (adjust origin as needed)
-// ─────────────────────────────────────────────────────────────────────────────
 function setCors(res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', process.env.APP_URL ?? '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
 
-// Normalize drizzle execute result (array for neon-http, { rows } for pg)
 function getRows(execResult: any) {
   return Array.isArray(execResult) ? execResult : execResult?.rows;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Handler
-// ─────────────────────────────────────────────────────────────────────────────
+function buildRedirectUrl(req: VercelRequest, pathOrUrl: string) {
+  const base =
+    process.env.APP_URL ||
+    (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-host']
+      ? `${req.headers['x-forwarded-proto']}://${req.headers['x-forwarded-host']}`
+      : `https://${req.headers.host}`);
+  try {
+    return new URL(pathOrUrl, base);
+  } catch {
+    return new URL('/success.html', base);
+  }
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(res);
   if (req.method === 'OPTIONS') return res.status(204).end();
 
   try {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body ?? {};
+    // ---- SAFE body parse (handles GET/empty body) ----
+    let body: any = {};
+    if (typeof req.body === 'string') {
+      const trimmed = req.body.trim();
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        try { body = JSON.parse(trimmed); } catch { body = {}; }
+      }
+    } else if (req.body && typeof req.body === 'object') {
+      body = req.body;
+    }
+
     const token =
       (req.query.token as string) ||
       (typeof body === 'object' && (body as any)?.token) ||
@@ -44,49 +59,62 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         ? req.headers.authorization.slice('Bearer '.length)
         : undefined);
 
-    if (!token) return res.status(400).json({ ok: false, error: 'Missing token' });
+    const next = (req.query.next as string) || '/success.html';
+    const wantsJson = (req.query.mode as string) === 'json';
+
+    if (!token) {
+      const err = { ok: false, error: 'Missing token' };
+      return wantsJson ? res.status(400).json(err) : res.status(400).json(err);
+    }
     if (!process.env.JWT_SECRET) {
-      return res.status(500).json({ ok: false, error: 'Server misconfig: JWT_SECRET' });
+      const err = { ok: false, error: 'Server misconfig: JWT_SECRET' };
+      return wantsJson ? res.status(500).json(err) : res.status(500).json(err);
     }
 
-    // Verify the token produced by /api/waitlist.ts
+    // Verify token
     let payload: any;
     try {
       payload = jwt.verify(token, process.env.JWT_SECRET);
     } catch {
-      return res.status(401).json({ ok: false, error: 'Invalid or expired token' });
+      const err = { ok: false, error: 'Invalid or expired token' };
+      return wantsJson ? res.status(401).json(err) : res.status(401).json(err);
     }
 
     const userId = payload?.sub as string | undefined;
-    if (!userId) return res.status(400).json({ ok: false, error: 'Invalid token payload' });
+    if (!userId) {
+      const err = { ok: false, error: 'Invalid token payload' };
+      return wantsJson ? res.status(400).json(err) : res.status(400).json(err);
+    }
 
     const db = await getDb();
 
-    // Ensure user exists
-    const userQ = sql<{ id: string; email: string }>`
-      SELECT id, email
-        FROM user_account
-       WHERE id = ${userId}
-       LIMIT 1
+    // Fetch user + referral_code
+    const userQ = sql<{ id: string; email: string; referral_code: string | null }>`
+      SELECT id, email, referral_code
+      FROM user_account
+      WHERE id = ${userId}
+      LIMIT 1
     `;
     const userRows = getRows(await db.execute(userQ));
     const user = userRows?.[0];
-    if (!user) return res.status(404).json({ ok: false, error: 'User not found' });
+    if (!user) {
+      const err = { ok: false, error: 'User not found' };
+      return wantsJson ? res.status(404).json(err) : res.status(404).json(err);
+    }
 
-    // Find the most recent JOINED referrer (if any).
+    // Award VERIFIED once if a JOINED referrer exists
     const refQ = sql<{ referrer_id: string }>`
       SELECT referrer_id
-        FROM referral_event
-       WHERE referee_id = ${user.id}
-         AND kind = 'JOINED'
-       ORDER BY created_at DESC
-       LIMIT 1
+      FROM referral_event
+      WHERE referee_id = ${user.id}
+        AND kind = 'JOINED'
+      ORDER BY created_at DESC
+      LIMIT 1
     `;
     const refRows = getRows(await db.execute(refQ));
     const ref = refRows?.[0];
 
     if (ref?.referrer_id) {
-      // Insert a VERIFIED event once; ignore duplicates.
       const ins = sql`
         INSERT INTO referral_event (referrer_id, referee_id, kind)
         VALUES (${ref.referrer_id}, ${user.id}, 'VERIFIED')
@@ -95,15 +123,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       await db.execute(ins);
     }
 
-    // (Optional) If you add an `email_verified_at` column later, update it here.
-    // await db.execute(sql`UPDATE user_account SET email_verified_at = now() WHERE id = ${user.id} AND email_verified_at IS NULL`);
+    // Build redirect
+    const dest = buildRedirectUrl(req, next);
+    if (user.referral_code) dest.searchParams.set('ref', user.referral_code);
 
     res.setHeader('Cache-Control', 'no-store');
-    return res.status(200).json({
-      ok: true,
-      message: 'Email verified',
-      awarded: Boolean(ref?.referrer_id) || false,
-    });
+
+    if (wantsJson) {
+      return res.status(200).json({
+        ok: true,
+        verified: true,
+        awarded: Boolean(ref?.referrer_id) || false,
+        redirect: dest.toString(),
+      });
+    }
+
+    // 302 redirect
+    res.status(302).setHeader('Location', dest.toString()).send('');
   } catch (err) {
     console.error('[verify-email] error:', err);
     return res.status(500).json({ ok: false, error: 'Internal error' });

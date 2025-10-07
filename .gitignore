@@ -1,7 +1,6 @@
-node_modules/
 .env
-.vercel/
-.tsbuild/
-dist/
-*.log
-.DS_Store
+.env.local
+.env.*.local
+.tsbuild
+node_modules
+.vercel
