@@ -14,9 +14,9 @@ import jwt from "jsonwebtoken";
 import { sql } from "drizzle-orm";
 import { getDb } from "../db/client.serverless.js";
 
-// ─────────────────────────────────────────────────────────────────────────────
-// CORS
-// ─────────────────────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
+   CORS
+   ────────────────────────────────────────────────────────────────────────── */
 function getAllowedOrigins(): string[] {
   const raw = process.env.APP_URL ?? "*";
   return raw === "*" ? ["*"] : raw.split(",").map((s) => s.trim()).filter(Boolean);
@@ -33,16 +33,17 @@ function setCors(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.setHeader("Access-Control-Max-Age", "600");
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
 }
 
-// Env warnings (handy in dev)
+// Soft env checks (helpful locally)
 (["DATABASE_URL", "JWT_SECRET", "TURNSTILE_SECRET_KEY"] as const).forEach((k) => {
   if (!process.env[k]) console.warn(`[waitlist] missing env ${k}`);
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Validation
-// ─────────────────────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
+   Validation
+   ────────────────────────────────────────────────────────────────────────── */
 const JoinSchema = z.object({
   email: z.string().email(),
   role: z.string().min(1).max(40),
@@ -57,15 +58,15 @@ const JoinSchema = z.object({
   utm_campaign: z.string().max(64).optional(),
   utm_content: z.string().max(64).optional(),
   utm_term: z.string().max(64).optional(),
-  // Cloudflare Turnstile token (any of these fields)
+  // Cloudflare Turnstile token (we accept several field names)
   turnstileToken: z.string().min(5).optional(),
   ["cf-turnstile-response"]: z.string().min(5).optional(),
   cf_turnstile_response: z.string().min(5).optional(),
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Turnstile verify (with dev bypass)
-// ─────────────────────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
+   Turnstile verify (TEST_BYPASS in non-prod)
+   ────────────────────────────────────────────────────────────────────────── */
 async function verifyTurnstile(token: string, ip?: string) {
   if (process.env.NODE_ENV !== "production" && token === "TEST_BYPASS") return true;
   const secret = process.env.TURNSTILE_SECRET_KEY || "";
@@ -85,7 +86,9 @@ async function verifyTurnstile(token: string, ip?: string) {
   return !!(data as any)?.success;
 }
 
-// Helpers
+/* ────────────────────────────────────────────────────────────────────────────
+   Helpers
+   ────────────────────────────────────────────────────────────────────────── */
 function makeReferralCode(email: string) {
   const seed = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "").slice(0, 6).toUpperCase();
   const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
@@ -95,9 +98,9 @@ function getRows(execResult: any) {
   return Array.isArray(execResult) ? execResult : execResult?.rows;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Handler
-// ─────────────────────────────────────────────────────────────────────────────
+/* ────────────────────────────────────────────────────────────────────────────
+   Handler
+   ────────────────────────────────────────────────────────────────────────── */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
@@ -106,7 +109,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Safe body parse (prevents JSON parse errors on empty/invalid bodies)
+    // tolerate raw JSON strings and objects
     let raw: any = {};
     if (typeof req.body === "string") {
       const t = req.body.trim();
@@ -147,7 +150,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const email = data.email.toLowerCase().trim();
     const refCodeIn = data.referral?.trim() || data.referral_auto?.trim() || null;
 
-    // Build UTM JSON and strip nulls
+    // Build UTM JSON and strip nulls (server-side)
     const utmPayload = {
       source: data.utm_source ?? null,
       medium: data.utm_medium ?? null,
@@ -157,7 +160,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
     const utmJson = sql`jsonb_strip_nulls(${JSON.stringify(utmPayload)}::jsonb)`;
 
-    // 1) Look up existing user by case-insensitive email
+    // 1) Look up existing user by case-insensitive email (matches UNIQUE lower(email))
     const existingQ = sql<{ id: string; email: string; referral_code: string | null }>`
       SELECT id, email, referral_code
         FROM user_account
@@ -167,11 +170,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const existingRows = getRows(await db.execute(existingQ));
     const existing = existingRows?.[0] || null;
 
-    // We'll populate this and return it
+    // will populate and return
     let user: { id: string; email: string; referral_code: string };
 
     if (existing) {
-      // 2a) UPDATE path — merge fields, merge UTM (existing || new)
+      // 2a) UPDATE — merge fields and UTM
       const updateQ = sql<{ id: string; email: string; referral_code: string | null }>`
         UPDATE user_account
            SET role = ${data.role},
@@ -188,7 +191,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         updRows?.[0] ??
         { id: existing.id, email: existing.email, referral_code: existing.referral_code };
 
-      // Ensure referral code exists
+      // ensure referral_code exists (retry on unique collision)
       let rc = current.referral_code ?? "";
       if (!rc) {
         for (let i = 0; i < 3 && !rc; i++) {
@@ -212,7 +215,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       user = { id: current.id, email: current.email, referral_code: rc || makeReferralCode(email) };
     } else {
-      // 2b) INSERT path — retry referral_code on collision
+      // 2b) INSERT — generate referral_code (retry on unique collision)
       let inserted: { id: string; email: string; referral_code: string } | null = null;
       for (let i = 0; i < 3 && !inserted; i++) {
         const candidateCode = makeReferralCode(email);
@@ -239,7 +242,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       user = inserted;
     }
 
-    // 3) Log referral SIGNUP if present (not self)
+    // 3) Log referral SIGNUP if present (and not self)
     if (refCodeIn) {
       const logReferral = sql`
         INSERT INTO referral_event (referrer_id, referee_id, kind)

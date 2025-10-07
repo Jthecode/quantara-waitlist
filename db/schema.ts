@@ -11,7 +11,8 @@
 import {
   pgTable,
   bigserial,
-  bigint,
+  /* NOTE: import the helper as an alias to avoid TS primitive name clash */
+  bigint as pgBigint,
   text,
   boolean,
   timestamp,
@@ -49,8 +50,8 @@ export const userAccount = pgTable(
     // Stable referral code (nullable until generated). Unique index allows multiple NULLs.
     referralCode: text("referral_code"),
 
-    // Self-referencing FK column (nullable) — FK is defined in the table callback to avoid circular reference
-    referredBy: bigint("referred_by", { mode: "bigint" }),
+    // Self-referencing FK column (nullable)
+    referredBy: pgBigint("referred_by", { mode: "bigint" }),
 
     emailVerified: boolean("email_verified").notNull().default(false),
     turnstileOk: boolean("turnstile_ok").notNull().default(false),
@@ -74,7 +75,7 @@ export const userAccount = pgTable(
 
     referredByIdx: index("user_account_referred_by_idx").on(t.referredBy),
 
-    // ✅ self-referencing FK defined with direct object (no callback)
+    // ✅ self-referencing FK
     referredByFk: foreignKey({
       columns: [t.referredBy],
       foreignColumns: [t.id],
@@ -95,11 +96,11 @@ export const referralEvent = pgTable(
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
 
     // Proper FKs to user_account
-    referrerId: bigint("referrer_id", { mode: "bigint" })
+    referrerId: pgBigint("referrer_id", { mode: "bigint" })
       .notNull()
       .references(() => userAccount.id, { onDelete: "cascade", onUpdate: "cascade" }),
 
-    refereeId: bigint("referee_id", { mode: "bigint" })
+    refereeId: pgBigint("referee_id", { mode: "bigint" })
       .notNull()
       .references(() => userAccount.id, { onDelete: "cascade", onUpdate: "cascade" }),
 
@@ -111,7 +112,7 @@ export const referralEvent = pgTable(
     byRefereeIdx: index("ref_event_referee_idx").on(t.refereeId),
     byKindIdx: index("ref_event_kind_idx").on(t.kind),
 
-    // Prevent duplicates like (referrer, referee, 'JOINED') being inserted twice
+    // Prevent duplicates like (referrer, referee, kind) being inserted twice
     uniqueTriplet: uniqueIndex("ref_event_referrer_referee_kind_uq").on(
       t.referrerId,
       t.refereeId,
@@ -128,7 +129,7 @@ export const faucetClaim = pgTable(
   {
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
 
-    userId: bigint("user_id", { mode: "bigint" })
+    userId: pgBigint("user_id", { mode: "bigint" })
       .references(() => userAccount.id, { onDelete: "set null", onUpdate: "cascade" }),
 
     ss58Address: text("ss58_address").notNull(), // optionally enforce min length in app layer
@@ -139,7 +140,7 @@ export const faucetClaim = pgTable(
     // QTR uses 12 decimals → store as text for exactness (e.g., "100.000000000000")
     amountQtr: text("amount_qtr").notNull(),
 
-    status: faucetStatus("status").notNull(),
+    status: faucetStatus("status").notNull().default("PENDING"),
     reason: text("reason"),
     txHash: text("tx_hash"),
 
