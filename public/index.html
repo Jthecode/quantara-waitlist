@@ -756,223 +756,228 @@ console.log(addr);</code></pre>
   </div>
 
   <!-- Launch gating & UX scripts -->
-  <script>
-    // ====== Configure your real launch timestamp ======
-    const Q_RELEASE_AT = new Date('2025-11-30T17:00:00Z');
+<script>
+  // Set your real launch timestamp
+  const Q_RELEASE_AT = new Date('2025-11-30T17:00:00Z');
 
-    (function setupPreviewGate() {
-      const live = Date.now() >= Q_RELEASE_AT.getTime();
-      document.documentElement.setAttribute('data-live', live ? '1' : '0');
+  // Add header blur only after first paint (cheaper)
+  window.addEventListener('load', () => {
+    document.querySelector('header')?.classList.add('supports-blur');
+  });
 
-      const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-      const t1 = document.getElementById('preview-release-time');
-      const t2 = document.getElementById('preview-release-time-2');
-      [t1, t2].forEach(t => { if (t) { t.dateTime = Q_RELEASE_AT.toISOString(); t.textContent = fmt.format(Q_RELEASE_AT); } });
+  // ---------- Preview gate + countdown (lightweight) ----------
+  (function setupPreviewGate() {
+    const root = document.documentElement;
+    const live = Date.now() >= Q_RELEASE_AT.getTime();
+    root.setAttribute('data-live', live ? '1' : '0');
 
-      const c1 = document.getElementById('preview-countdown');
-      const c2 = document.getElementById('preview-countdown-2');
-      function tick() {
-        const diff = Q_RELEASE_AT - Date.now();
-        if (diff <= 0) {
-          document.documentElement.setAttribute('data-live', '1');
-          if (c1) c1.textContent = 'LIVE';
-          if (c2) c2.textContent = 'LIVE';
-          document.querySelectorAll('[data-live-link]').forEach(a => a.classList.remove('is-disabled'));
-          document.getElementById('announce')?.classList.add('hidden');
-          document.getElementById('live-badge')?.replaceChildren(document.createTextNode('Live'));
-          return;
-        }
-        const h = Math.floor(diff / 36e5);
-        const m = Math.floor((diff % 36e5) / 6e4);
-        const s = Math.floor((diff % 6e4) / 1000);
-        const txt = `T-${h}h ${m}m ${s}s`;
-        const b = document.getElementById('bar-countdown');
-        if (b) b.textContent = txt;
-        if (c1) c1.textContent = txt;
-        if (c2) c2.textContent = txt;
-        requestAnimationFrame(()=>setTimeout(tick, 250));
+    const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    for (const id of ['preview-release-time', 'preview-release-time-2']) {
+      const t = document.getElementById(id);
+      if (t) { t.dateTime = Q_RELEASE_AT.toISOString(); t.textContent = fmt.format(Q_RELEASE_AT); }
+    }
+
+    const c1 = document.getElementById('preview-countdown');
+    const c2 = document.getElementById('preview-countdown-2');
+    const bar = document.getElementById('bar-countdown');
+    let timer = null;
+
+    function renderCountdown() {
+      const diff = Q_RELEASE_AT - Date.now();
+      if (diff <= 0) {
+        root.setAttribute('data-live', '1');
+        if (c1) c1.textContent = 'LIVE';
+        if (c2) c2.textContent = 'LIVE';
+        document.querySelectorAll('[data-live-link]').forEach(a => a.classList.remove('is-disabled'));
+        document.getElementById('announce')?.classList.add('hidden');
+        const badge = document.getElementById('live-badge');
+        if (badge) badge.textContent = 'Live';
+        stopTick();
+        return;
       }
-      tick();
+      const h = Math.floor(diff / 36e5);
+      const m = Math.floor((diff % 36e5) / 6e4);
+      const s = Math.floor((diff % 6e4) / 1e3);
+      const txt = `T-${h}h ${m}m ${s}s`;
+      if (bar) bar.textContent = txt;
+      if (c1) c1.textContent = txt;
+      if (c2) c2.textContent = txt;
+    }
 
-      if (!live) {
-        document.querySelectorAll('[data-live-link]').forEach(a => {
-          a.setAttribute('aria-disabled', 'true');
-          a.addEventListener('click', e => {
-            e.preventDefault();
-            alert('This opens at launch. Join the waitlist to be notified.');
-          });
-        });
-      }
-    })();
+    function startTick() { stopTick(); timer = setTimeout(function loop(){ renderCountdown(); timer = setTimeout(loop, 500); }, 0); }
+    function stopTick()  { if (timer) { clearTimeout(timer); timer = null; } }
 
-    // Simulated height/peers ticker pre-launch
-    (function mockStatus(){
-      const h = document.getElementById('height');
-      const p = document.getElementById('peers');
-      let height = 12345, peers = 18;
-      setInterval(()=>{
-        height += Math.floor(Math.random()*3); // 0-2
-        peers = Math.max(10, Math.min(64, peers + (Math.random()>0.5?1:-1)));
-        if (h) h.textContent = height.toLocaleString();
-        if (p) p.textContent = peers.toString();
-      }, 2000);
-    })();
+    // pause/continue when tab visibility changes
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) stopTick(); else startTick();
+    }, { passive: true });
 
-    // Video modal
-    (function(){
-      const m=document.getElementById('video-modal');
-      document.getElementById('watch-demo')?.addEventListener('click',()=>m.classList.remove('hidden'));
-      document.getElementById('close-modal')?.addEventListener('click',()=>m.classList.add('hidden'));
-      m?.addEventListener('click',e=>{ if(e.target===m) m.classList.add('hidden'); });
-    })();
+    renderCountdown();
+    if (!live) startTick();
 
-    // Referral share modal (buttons from form + top of rewards)
-    (function(){
-      const modal = document.getElementById('ref-modal');
-      const formBtn = document.getElementById('share-ref');
-      const topBtn = document.getElementById('open-ref-share-2');
-      const closeRef = document.getElementById('close-ref');
-      const input = document.getElementById('ref-link');
-      const copyRef = document.getElementById('copy-ref');
-      const url = new URL(window.location.href);
-      const myRef = url.searchParams.get('ref') || 'YOURCODE';
-      const base = url.origin + url.pathname.replace(/index\.html$/, '');
-      input.value = `${base}?ref=${encodeURIComponent(myRef)}`;
-
-      [formBtn, topBtn].forEach(b=>b?.addEventListener('click', ()=>modal.classList.remove('hidden')));
-      closeRef?.addEventListener('click', ()=>modal.classList.add('hidden'));
-      modal?.addEventListener('click', e=>{ if(e.target===modal) modal.classList.add('hidden'); });
-      copyRef?.addEventListener('click', async ()=>{
-        try { await navigator.clipboard.writeText(input.value); copyRef.textContent='Copied!'; setTimeout(()=>copyRef.textContent='Copy',1500); }
-        catch { input.select(); document.execCommand('copy'); }
-      });
-    })();
-
-    // Copy buttons for code blocks
-    document.querySelectorAll('[data-copy]').forEach(btn=>{
-      btn.addEventListener('click', async ()=>{
-        const sel = btn.getAttribute('data-copy'); const el = document.querySelector(sel);
-        if(!el) return; const text = el.innerText.replace(/\n+$/,'');
-        try { await navigator.clipboard.writeText(text); btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy',1200); }
-        catch {}
-      });
-    });
-
-    // Copy RPC
-    document.getElementById('copy-rpc')?.addEventListener('click', async ()=>{
-      const text = document.getElementById('rpc-url')?.textContent?.trim() || '';
-      if (!text) return;
-      try { await navigator.clipboard.writeText(text); alert('RPC URL copied'); } catch {}
-    });
-
-    // Metrics count-up
-    document.querySelectorAll('[data-countup]').forEach(el=>{
-      const end=+el.getAttribute('data-countup'); let cur=0, dur=900, start=performance.now();
-      const step=(t)=>{const k=Math.min(1,(t-start)/dur); cur=Math.floor(end*k); el.textContent=cur.toLocaleString();
-        if(k<1) requestAnimationFrame(step); else el.textContent=end.toLocaleString();};
-      requestAnimationFrame(step);
-    });
-
-    // Referral chart animation when in view
-    (function(){
-      const wrap = document.getElementById('rewards-chart');
-      if(!wrap) return;
-      const bars = wrap.querySelectorAll('.bar');
-      const io = new IntersectionObserver(entries=>{
-        entries.forEach(e=>{
-          if(e.isIntersecting){
-            bars.forEach(b=>{
-              const t = Math.min(100, Math.max(0, +b.getAttribute('data-target')||0));
-              b.style.transition='width 900ms cubic-bezier(.2,.9,.2,1)';
-              requestAnimationFrame(()=>b.style.width = t + '%');
-            });
-            io.disconnect();
-          }
-        });
-      }, { threshold:.25 });
-      io.observe(wrap);
-
-            // Optional: pull user's points from localStorage (preview mock)
-      const myPts = +(localStorage.getItem('q_points') || 0);
-      document.getElementById('my-points')?.replaceChildren(document.createTextNode(String(myPts)));
-    })();
-
-    // ===== Cloudflare Turnstile: token handling & submit guard =====
-    (function () {
-      const form = document.forms.waitlist;
-      if (!form) return;
-
-      const submitBtn = form.querySelector('button[type="submit"]');
-      const TOKEN_NAME = 'cf-turnstile-response';
-
-      // Helper to get token (Turnstile auto-injects a hidden input with this name)
-      const getToken = () => form.querySelector(`input[name="${TOKEN_NAME}"]`)?.value || '';
-
-      // Start disabled until we have a token
-      if (submitBtn) submitBtn.disabled = true;
-
-      // Watch the form for Turnstile's hidden input to appear/populate
-      const mo = new MutationObserver(() => {
-        const hasToken = !!getToken();
-        if (submitBtn) submitBtn.disabled = !hasToken;
-      });
-      mo.observe(form, { subtree: true, childList: true, attributes: true });
-
-      // Optional: if you add data-callback/expired-callback/error-callback to the widget,
-      // these globals will be invoked by Turnstile:
-      window.onTurnstileToken = function (token) {
-        let input = form.querySelector(`input[name="${TOKEN_NAME}"]`);
-        if (!input) {
-          input = document.createElement('input');
-          input.type = 'hidden';
-          input.name = TOKEN_NAME;
-          form.appendChild(input);
-        }
-        input.value = token || '';
-        if (submitBtn) submitBtn.disabled = !token;
-      };
-      window.onTurnstileExpired = function () {
-        const input = form.querySelector(`input[name="${TOKEN_NAME}"]`);
-        if (input) input.value = '';
-        if (submitBtn) submitBtn.disabled = true;
-      };
-      window.onTurnstileError = function () {
-        if (submitBtn) submitBtn.disabled = true;
-      };
-
-      // Final guard on submit
-      form.addEventListener('submit', (e) => {
-        if (!getToken()) {
+    if (!live) {
+      document.querySelectorAll('[data-live-link]').forEach(a => {
+        a.setAttribute('aria-disabled', 'true');
+        a.addEventListener('click', e => {
           e.preventDefault();
-          alert('Please complete the human check before submitting.');
-          try { turnstile?.reset?.(); } catch {}
-          return false;
+          alert('This opens at launch. Join the waitlist to be notified.');
+        }, { passive: true });
+      });
+    }
+  })();
+
+  // ---------- Simulated height/peers ticker pre-launch ----------
+  (function mockStatus(){
+    const h = document.getElementById('height');
+    const p = document.getElementById('peers');
+    let height = 12345, peers = 18;
+    setInterval(()=>{
+      height += Math.floor(Math.random()*3);
+      peers = Math.max(10, Math.min(64, peers + (Math.random()>0.5?1:-1)));
+      if (h) h.textContent = height.toLocaleString();
+      if (p) p.textContent = String(peers);
+    }, 2000);
+  })();
+
+  // ---------- Video modal ----------
+  (function(){
+    const m=document.getElementById('video-modal');
+    document.getElementById('watch-demo')?.addEventListener('click',()=>m.classList.remove('hidden'));
+    document.getElementById('close-modal')?.addEventListener('click',()=>m.classList.add('hidden'));
+    m?.addEventListener('click',e=>{ if(e.target===m) m.classList.add('hidden'); });
+  })();
+
+  // ---------- Referral share modal ----------
+  (function(){
+    const modal = document.getElementById('ref-modal');
+    const formBtn = document.getElementById('share-ref');
+    const topBtn = document.getElementById('open-ref-share-2');
+    const closeRef = document.getElementById('close-ref');
+    const input = document.getElementById('ref-link');
+    const copyRef = document.getElementById('copy-ref');
+    const url = new URL(window.location.href);
+    const myRef = url.searchParams.get('ref') || 'YOURCODE';
+    const base = url.origin + url.pathname.replace(/index\.html$/, '');
+    if (input) input.value = `${base}?ref=${encodeURIComponent(myRef)}`;
+
+    [formBtn, topBtn].forEach(b=>b?.addEventListener('click', ()=>modal.classList.remove('hidden')));
+    closeRef?.addEventListener('click', ()=>modal.classList.add('hidden'));
+    modal?.addEventListener('click', e=>{ if(e.target===modal) modal.classList.add('hidden'); });
+    copyRef?.addEventListener('click', async ()=>{
+      try { await navigator.clipboard.writeText(input.value); copyRef.textContent='Copied!'; setTimeout(()=>copyRef.textContent='Copy',1500); }
+      catch {}
+    });
+  })();
+
+  // ---------- Copy buttons for code blocks ----------
+  document.querySelectorAll('[data-copy]').forEach(btn=>{
+    btn.addEventListener('click', async ()=>{
+      const sel = btn.getAttribute('data-copy'); const el = document.querySelector(sel);
+      if(!el) return; const text = el.innerText.replace(/\n+$/,'');
+      try { await navigator.clipboard.writeText(text); btn.textContent='Copied!'; setTimeout(()=>btn.textContent='Copy',1200); }
+      catch {}
+    }, { passive: true });
+  });
+
+  // ---------- Copy RPC ----------
+  document.getElementById('copy-rpc')?.addEventListener('click', async ()=>{
+    const text = document.getElementById('rpc-url')?.textContent?.trim() || '';
+    if (!text) return;
+    try { await navigator.clipboard.writeText(text); alert('RPC URL copied'); } catch {}
+  }, { passive: true });
+
+  // ---------- Metrics count-up ----------
+  document.querySelectorAll('[data-countup]').forEach(el=>{
+    const end=+el.getAttribute('data-countup'); let cur=0, dur=900, start=performance.now();
+    const step=(t)=>{const k=Math.min(1,(t-start)/dur); cur=Math.floor(end*k); el.textContent=cur.toLocaleString();
+      if(k<1) requestAnimationFrame(step); else el.textContent=end.toLocaleString();};
+    requestAnimationFrame(step);
+  });
+
+  // ---------- Rewards chart animation + mock points ----------
+  (function(){
+    const wrap = document.getElementById('rewards-chart');
+    if(!wrap) return;
+    const bars = wrap.querySelectorAll('.bar');
+    const io = new IntersectionObserver(entries=>{
+      entries.forEach(e=>{
+        if(e.isIntersecting){
+          bars.forEach(b=>{
+            const t = Math.min(100, Math.max(0, +b.getAttribute('data-target')||0));
+            b.style.transition='width 900ms cubic-bezier(.2,.9,.2,1)';
+            b.style.width = t + '%';
+          });
+          io.disconnect();
         }
       });
-    })();
+    }, { threshold:.25 });
+    io.observe(wrap);
 
-    // Referral & UTM capture
-    (function () {
-      const url = new URL(window.location.href);
-      const ref = url.searchParams.get('ref') || url.searchParams.get('r');
-      const field = document.getElementById('referral_auto');
-      if (ref && field) field.value = ref.slice(0, 64);
+    const myPts = +(localStorage.getItem('q_points') || 0);
+    const ptsEl = document.getElementById('my-points');
+    if (ptsEl) ptsEl.textContent = String(myPts);
+  })();
 
-      const form = document.forms.waitlist;
-      if (!form) return;
-      ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k => {
-        const v = url.searchParams.get(k);
-        if (v) {
-          const el = document.createElement('input');
-          el.type = 'hidden';
-          el.name = k;
-          el.value = v.slice(0, 64);
-          form.appendChild(el);
-        }
-      });
-    })();
-  </script>
-</body>
-</html>
+  // ---------- Cloudflare Turnstile: token handling & submit guard ----------
+  (function () {
+    const form = document.forms.waitlist;
+    if (!form) return;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const TOKEN_NAME = 'cf-turnstile-response';
 
+    // start disabled until we get a token
+    if (submitBtn) submitBtn.disabled = true;
 
+    // Callbacks from Turnstile (use data-* attributes on the widget)
+    window.onTurnstileToken = function (token) {
+      let input = form.querySelector(`input[name="${TOKEN_NAME}"]`);
+      if (!input) {
+        input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = TOKEN_NAME;
+        form.appendChild(input);
+      }
+      input.value = token || '';
+      if (submitBtn) submitBtn.disabled = !token;
+    };
+    window.onTurnstileExpired = function () {
+      const input = form.querySelector(`input[name="${TOKEN_NAME}"]`);
+      if (input) input.value = '';
+      if (submitBtn) submitBtn.disabled = true;
+    };
+    window.onTurnstileError = function () {
+      if (submitBtn) submitBtn.disabled = true;
+    };
+
+    form.addEventListener('submit', (e) => {
+      const token = form.querySelector(`input[name="${TOKEN_NAME}"]`)?.value || '';
+      if (!token) {
+        e.preventDefault();
+        alert('Please complete the human check before submitting.');
+        try { turnstile?.reset?.(); } catch {}
+        return false;
+      }
+    });
+  })();
+
+  // ---------- Referral & UTM capture ----------
+  (function () {
+    const url = new URL(window.location.href);
+    const ref = url.searchParams.get('ref') || url.searchParams.get('r');
+    const field = document.getElementById('referral_auto');
+    if (ref && field) field.value = ref.slice(0, 64);
+
+    const form = document.forms.waitlist;
+    if (!form) return;
+    ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k => {
+      const v = url.searchParams.get(k);
+      if (v) {
+        const el = document.createElement('input');
+        el.type = 'hidden';
+        el.name = k;
+        el.value = v.slice(0, 64);
+        form.appendChild(el);
+      }
+    });
+  })();
+</script>

@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* light helpers */
+.is-disabled{opacity:.85}
+.is-disabled:hover{opacity:1}
+
+/* Turnstile reserve space to avoid layout jank */
+.cf-turnstile{min-height:64px;display:block}
+
+/* cheaper background (uses image if present, falls back to solid) */
+.bg-grid{
+  background:
+    url("/assets/bg-grid.webp") center/cover no-repeat,
+    linear-gradient(#0a0b0d,#0a0b0d);
+}

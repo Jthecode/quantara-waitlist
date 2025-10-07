@@ -5,19 +5,28 @@
   "description": "Static landing page + form for the Quantara Devnet-0 waitlist.",
   "private": true,
   "scripts": {
-    "dev:vercel": "vercel dev",
-    "dev": "npm run typecheck && npm run dev:vercel",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+
+    "tw:build": "tailwindcss -c tailwind.config.cjs -i ./styles/input.css -o ./public/styles/app.css --minify",
+    "tw:watch": "tailwindcss -c tailwind.config.cjs -i ./styles/input.css -o ./public/styles/app.css --watch",
+
+    "dev": "npm run tw:watch",
+    "serve": "vercel dev --listen 3000",
+
+    "build": "npm run typecheck && npm run tw:build",
+    "vercel-build": "npm run build",
+
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "browserslist:update": "npx update-browserslist-db@latest"
   },
   "dependencies": {
     "@neondatabase/serverless": "^0.10.4",
     "@upstash/ratelimit": "^2.0.6",
     "@upstash/redis": "^1.35.4",
-    "dotenv": "^17.2.3",
+    "dotenv": "^16.4.5",
     "drizzle-orm": "^0.44.6",
     "jsonwebtoken": "^9.0.2",
     "pg": "^8.16.3",
@@ -25,15 +34,17 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.1.14",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.7.0",
     "@vercel/node": "^3.2.0",
+    "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.5",
+    "tailwindcss": "^4.1.14",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vercel": "^48.2.0"
   },
-  "engines": {
-    "node": ">=18.17"
-  }
+  "engines": { "node": ">=18.17" },
+  "browserslist": ["defaults", "not IE 11", "maintained node versions"]
 }
