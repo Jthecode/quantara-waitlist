@@ -1,5 +1,56 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://waitlist.quantara.tech/</loc></url>
-  <url><loc>https://waitlist.quantara.tech/privacy.html</loc></url>
+  <!-- Root -->
+  <url>
+    <loc>https://www.quantara-waitlist.com/</loc>
+    <lastmod>2025-10-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- Product / feature pages -->
+  <url>
+    <loc>https://www.quantara-waitlist.com/wallet/</loc>
+    <lastmod>2025-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.quantara-waitlist.com/faucet/</loc>
+    <lastmod>2025-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.quantara-waitlist.com/explorer/</loc>
+    <lastmod>2025-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.quantara-waitlist.com/status/</loc>
+    <lastmod>2025-10-07</lastmod>
+    <changefreq>hourly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.quantara-waitlist.com/validators/</loc>
+    <lastmod>2025-10-07</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.quantara-waitlist.com/leaderboard/</loc>
+    <lastmod>2025-10-07</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Legal -->
+  <url>
+    <loc>https://www.quantara-waitlist.com/privacy.html</loc>
+    <lastmod>2025-10-07</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.4</priority>
+  </url>
 </urlset>

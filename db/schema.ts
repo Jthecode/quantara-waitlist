@@ -11,8 +11,7 @@
 import {
   pgTable,
   bigserial,
-  /* NOTE: import the helper as an alias to avoid TS primitive name clash */
-  bigint as pgBigint,
+  bigint as pgBigint, // avoid TS primitive name clash
   text,
   boolean,
   timestamp,
@@ -20,7 +19,7 @@ import {
   index,
   uniqueIndex,
   pgEnum,
-  foreignKey, // for self-referencing FK
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
@@ -38,7 +37,7 @@ export const userAccount = pgTable(
   {
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
 
-    // NOTE: email unique is enforced on LOWER(email) via an expression index below
+    // Enforce uniqueness via LOWER(email) expression index (below)
     email: text("email").notNull(),
 
     role: text("role"),               // 'Enthusiast' | 'Creator' | 'Builder' | ...
@@ -47,16 +46,16 @@ export const userAccount = pgTable(
     github: text("github"),
     country: text("country"),
 
-    // Stable referral code (nullable until generated). Unique index allows multiple NULLs.
+    // Stable referral code (nullable until generated).
     referralCode: text("referral_code"),
 
-    // Self-referencing FK column (nullable)
+    // Self-referencing FK (nullable)
     referredBy: pgBigint("referred_by", { mode: "bigint" }),
 
     emailVerified: boolean("email_verified").notNull().default(false),
     turnstileOk: boolean("turnstile_ok").notNull().default(false),
 
-    // Store all UTM fields in one JSONB blob
+    // All UTM fields in one JSONB blob
     utm: jsonb("utm")
       .$type<{ source?: string; medium?: string; campaign?: string; content?: string; term?: string }>()
       .notNull()
@@ -68,14 +67,14 @@ export const userAccount = pgTable(
     // Case-insensitive UNIQUE on email
     emailLowerUq: uniqueIndex("user_account_email_lower_uq").on(sql`lower(${t.email})`),
 
-    // Helpful non-unique index for CI lookups
+    // Helpful non-unique index for lookups
     emailLowerIdx: index("user_account_email_lower_idx").on(sql`lower(${t.email})`),
 
     referralCodeUq: uniqueIndex("user_account_referral_code_uq").on(t.referralCode),
 
     referredByIdx: index("user_account_referred_by_idx").on(t.referredBy),
 
-    // ✅ self-referencing FK
+    // Self-referencing FK
     referredByFk: foreignKey({
       columns: [t.referredBy],
       foreignColumns: [t.id],
@@ -87,15 +86,13 @@ export const userAccount = pgTable(
 );
 
 /* ────────────────────────────────────────────────────────────────────────────
-   REFERRALS: Track referral lifecycle events.
-   kind: 'CLICK' | 'SIGNUP' | 'VERIFIED'
+   REFERRALS: Track referral lifecycle events (CLICK | SIGNUP | VERIFIED)
    ────────────────────────────────────────────────────────────────────────── */
 export const referralEvent = pgTable(
   "referral_event",
   {
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
 
-    // Proper FKs to user_account
     referrerId: pgBigint("referrer_id", { mode: "bigint" })
       .notNull()
       .references(() => userAccount.id, { onDelete: "cascade", onUpdate: "cascade" }),
@@ -112,7 +109,7 @@ export const referralEvent = pgTable(
     byRefereeIdx: index("ref_event_referee_idx").on(t.refereeId),
     byKindIdx: index("ref_event_kind_idx").on(t.kind),
 
-    // Prevent duplicates like (referrer, referee, kind) being inserted twice
+    // Prevent duplicates like (referrer, referee, kind) twice
     uniqueTriplet: uniqueIndex("ref_event_referrer_referee_kind_uq").on(
       t.referrerId,
       t.refereeId,
@@ -129,15 +126,17 @@ export const faucetClaim = pgTable(
   {
     id: bigserial("id", { mode: "bigint" }).primaryKey(),
 
-    userId: pgBigint("user_id", { mode: "bigint" })
-      .references(() => userAccount.id, { onDelete: "set null", onUpdate: "cascade" }),
+    userId: pgBigint("user_id", { mode: "bigint" }).references(() => userAccount.id, {
+      onDelete: "set null",
+      onUpdate: "cascade",
+    }),
 
-    ss58Address: text("ss58_address").notNull(), // optionally enforce min length in app layer
+    ss58Address: text("ss58_address").notNull(),
 
-    // Store salted hash, NOT raw IP. Compute in app layer.
+    // Store salted hash, NOT raw IP (hash in app layer)
     ipHash: text("ip_hash").notNull(),
 
-    // QTR uses 12 decimals → store as text for exactness (e.g., "100.000000000000")
+    // QTR uses 12 decimals → store as text for exactness ("100.000000000000")
     amountQtr: text("amount_qtr").notNull(),
 
     status: faucetStatus("status").notNull().default("PENDING"),
@@ -165,3 +164,11 @@ export type NewReferralEvent = typeof referralEvent.$inferInsert;
 
 export type FaucetClaim = typeof faucetClaim.$inferSelect;
 export type NewFaucetClaim = typeof faucetClaim.$inferInsert;
+
+/* Optional: export a tables-only object if you want to import a clean schema
+   object instead of the whole module. Either approach works with Drizzle. */
+export const tables = {
+  userAccount,
+  referralEvent,
+  faucetClaim,
+};

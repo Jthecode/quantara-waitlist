@@ -1,38 +1,48 @@
-/* Quantara © 2025 — Devnet-0 waitlist API
- * db/client.serverless.ts — Neon (serverless) client
- */
+/* ============================================================================
+   Quantara © 2025 — Devnet-0 waitlist API
+   db/client.serverless.ts — Neon (serverless) client wired to Drizzle
+   ========================================================================== */
 
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/neon-http";          // fetch-based adapter
 import { neon } from "@neondatabase/serverless";
-import * as schema from "./schema.js";                    // ✅ bind schema for typed queries
+import { drizzle, type NeonHttpDatabase } from "drizzle-orm/neon-http";
+import * as schema from "./schema.js"; // NodeNext requires .js suffix for TS files
 
-if (!process.env.DATABASE_URL) {
+// ---- Env guard --------------------------------------------------------------
+const DATABASE_URL = process.env.DATABASE_URL;
+if (!DATABASE_URL) {
   throw new Error("DATABASE_URL is required");
 }
 
-// Create a single Neon fetch client (no pool needed in serverless)
-const sql = neon(process.env.DATABASE_URL);
+// ---- Neon fetch client (no pooling in serverless) ---------------------------
+const neonSql = neon(DATABASE_URL);
 
-// Keep a singleton Drizzle instance to avoid re-instantiation on hot reloads
-let _db: ReturnType<typeof drizzle<typeof schema>> | undefined;
+// ---- Keep a singleton across hot reloads ------------------------------------
+declare global {
+  // eslint-disable-next-line no-var
+  var __Q_DB__: NeonHttpDatabase<typeof schema> | undefined;
+}
 
-export function getDb() {
-  if (!_db) _db = drizzle(sql, { schema });
+let _db: NeonHttpDatabase<typeof schema> | undefined = globalThis.__Q_DB__;
+
+export function getDb(): NeonHttpDatabase<typeof schema> {
+  if (!_db) {
+    _db = drizzle(neonSql, { schema });
+    globalThis.__Q_DB__ = _db;
+  }
   return _db;
 }
 
-// Optional: quick health check for /api/health
+// ---- Quick health check for /api/health ------------------------------------
 export async function ping(): Promise<boolean> {
   try {
-    // neon client supports template-tagged queries
-    await sql`select 1`;
+    await neonSql`select 1`; // template-tag query supported by @neondatabase/serverless
     return true;
   } catch {
     return false;
   }
 }
 
-// Re-export schema types if you want to import from this module
+// Re-export schema/types for convenience
 export { schema };
 export type DB = ReturnType<typeof getDb>;

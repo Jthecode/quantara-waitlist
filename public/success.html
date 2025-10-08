@@ -9,6 +9,20 @@
   <meta name="theme-color" content="#0a0b0d">
   <meta name="robots" content="noindex"> <!-- success pages shouldn't be indexed -->
   <link rel="icon" href="/assets/favicon.ico" />
+  <link rel="preconnect" href="https://twitter.com" crossorigin>
+  <link rel="dns-prefetch" href="https://twitter.com">
+
+  <!-- Social (optional even with noindex; harmless for shares) -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="You're on the list — Quantara">
+  <meta property="og:description" content="Thanks for joining the Quantara Devnet-0 waitlist. Be ready to try the wallet and faucet on day one.">
+  <meta property="og:image" content="/assets/og-image.png">
+  <meta property="og:url" content="https://www.quantara-waitlist.com/success.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="You're on the list — Quantara">
+  <meta name="twitter:description" content="Thanks for joining the Quantara Devnet-0 waitlist. Be ready to try the wallet and faucet on day one.">
+  <meta name="twitter:image" content="/assets/og-image.png">
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
 
   <style>
@@ -76,10 +90,11 @@
 
         <div class="row">
           <label for="refLink" class="sr-only">Your referral link</label>
-          <input type="text" id="refLink" style="flex:1; min-width:260px;" value="" readonly inputmode="url">
+          <input type="text" id="refLink" style="flex:1; min-width:260px;" value="" readonly inputmode="url" aria-describedby="refHelp">
           <button id="copyBtn" class="btn-gold" type="button" aria-live="polite">Copy link</button>
           <a id="shareX" role="button" class="btn-ghost" href="#" target="_blank" rel="noopener noreferrer">Share on X</a>
         </div>
+        <small id="refHelp" class="muted">This link contains your referral code for attribution.</small>
 
         <details style="margin-top:.75rem;">
           <summary>How your link works</summary>

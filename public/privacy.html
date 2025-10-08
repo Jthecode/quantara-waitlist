@@ -3,27 +3,43 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
   <title>Privacy — Quantara</title>
   <meta name="description" content="Privacy notice for the Quantara Devnet-0 waitlist, wallet preview, and faucet." />
-  <link rel="icon" href="/assets/favicon.ico" />
-  <!-- Minimal, accessible styles -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <meta name="theme-color" content="#0a0b0d">
+  <meta name="color-scheme" content="dark">
+  <link rel="canonical" href="https://www.quantara-waitlist.com/privacy.html" />
+  <meta name="robots" content="index,follow">
+
+  <!-- Favicon (SVG primary; keep ICO only if you actually add it) -->
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <!-- <link rel="icon" href="/assets/favicon.ico" /> -->
+
+  <!-- Minimal, local/inline styles (CSP-safe) -->
   <style>
-    :root { --pico-primary: #f1c46b; }
-    body { background:#0a0b0d; color:#fff; }
-    main a { color:#f1c46b; }
-    .muted { color:#9aa0a6; }
-    header, footer { color:#9aa0a6; }
-    .card { background:#101217; border:1px solid #191e25; border-radius:16px; padding:1.25rem; }
-    hr { border-color:#191e25; }
-    code { background:#151922; border:1px solid #1c2230; }
+    :root{--q-bg:#0a0b0d;--q-panel:#101217;--q-line:#191e25;--q-gold:#f1c46b;--q-muted:#9aa0a6}
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--q-bg);color:#fff;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+    main{max-width:860px;margin:0 auto;padding:2rem 1rem}
+    header,footer{color:var(--q-muted)}
+    h1,h2{margin:0 0 .5rem}
+    h1{font-size:2rem}
+    h2{font-size:1.25rem}
+    p,ul,li{line-height:1.6}
+    a{color:var(--q-gold);text-decoration:underline;text-underline-offset:2px}
+    .muted{color:var(--q-muted)}
+    .card{background:var(--q-panel);border:1px solid var(--q-line);border-radius:16px;padding:1.25rem;margin:1rem 0}
+    hr{border:0;border-top:1px solid var(--q-line);margin:1.5rem 0}
+    code{background:#151922;border:1px solid #1c2230;border-radius:6px;padding:.1rem .4rem}
+    small time{color:#c9cdd3}
   </style>
 </head>
 <body>
-  <main class="container">
-    <header class="muted" style="margin-top: 2rem;">
+  <main>
+    <header class="muted" style="margin-top: 1rem;">
       <small>Last updated: <time datetime="2025-10-01">1 Oct 2025</time></small>
-      <h1 style="color:#fff;margin:0.25rem 0 0.5rem">Privacy Notice</h1>
+      <h1 style="color:#fff;margin:.25rem 0 .5rem">Privacy Notice</h1>
       <p class="muted">Quantara Technology LLC (“<strong>Quantara</strong>”, “we”, “us”).</p>
     </header>
 
@@ -97,9 +113,9 @@
       <h2>Vendors & transfers</h2>
       <p>We rely on reputable processors to run a lightweight stack. Depending on your region, your data may be processed outside your country with appropriate safeguards.</p>
       <ul>
-        <li>Hosting/CDN (e.g., Cloudflare, Vercel, or Netlify)</li>
-        <li>Form handling (e.g., Netlify Forms or equivalent)</li>
-        <li>Anti-bot (e.g., <strong>Cloudflare Turnstile</strong> or hCaptcha)</li>
+        <li>Hosting/CDN (e.g., Cloudflare, Vercel)</li>
+        <li>Form handling / database</li>
+        <li>Anti-bot (e.g., <strong>Cloudflare Turnstile</strong>)</li>
         <li>Email delivery (e.g., Mailgun/Postmark/SES)</li>
         <li>Optional analytics (privacy-respecting, IP truncation where available)</li>
       </ul>
@@ -116,7 +132,7 @@
       <ul>
         <li><strong>Unsubscribe</strong> from emails via the link in any message.</li>
         <li><strong>Access/rectify/delete</strong> your personal data where applicable (GDPR/UK GDPR/CCPA/CPRA).</li>
-        <li><strong>Opt-out of sale/share</strong> (CPRA): we don’t sell personal information. If you believe otherwise, contact us.</li>
+        <li><strong>Opt-out of sale/share</strong> (CPRA): we don’t sell personal information.</li>
         <li><strong>Appeal</strong> decisions or lodge a complaint with your local data authority.</li>
       </ul>
       <p>To exercise rights, email <a href="mailto:privacy@quantaratech.com">privacy@quantaratech.com</a> with the subject “Data Request”. We may ask you to verify your email.</p>

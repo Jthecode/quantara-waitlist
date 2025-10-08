@@ -4,21 +4,36 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "moduleDetection": "force",
+
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+
     "types": ["node"],
     "lib": ["ES2022", "DOM"],
     "forceConsistentCasingInFileNames": true,
+
     "baseUrl": ".",
-    "noEmit": true,
-    "outDir": ".tsbuild"
+    "paths": {
+      "@/*": ["./*"],
+      "@/types/*": ["./types/*"],
+      "types/*": ["./types/*"],
+      "@/lib/*": ["./api/_lib/*", "./lib/*"]
+    },
+
+    "noEmit": true
   },
   "include": [
-    "db/**/*.ts",
     "api/**/*.ts",
+    "lib/**/*.ts",
+    "db/**/*.ts",
     "scripts/**/*.ts",
+    "public/scripts/**/*.ts",
+    "types/**/*.ts",
     "types/**/*.d.ts"
   ],
   "exclude": [

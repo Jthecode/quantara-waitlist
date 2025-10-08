@@ -10,11 +10,19 @@
     "tw:build": "tailwindcss -c tailwind.config.cjs -i ./styles/input.css -o ./public/styles/app.css --minify",
     "tw:watch": "tailwindcss -c tailwind.config.cjs -i ./styles/input.css -o ./public/styles/app.css --watch",
 
-    "dev": "npm run tw:watch",
-    "serve": "vercel dev --listen 3000",
+    "client:build": "esbuild public/scripts/api-client.ts --bundle --format=esm --platform=browser --outfile=public/scripts/api-client.js --sourcemap",
+    "client:watch": "esbuild public/scripts/api-client.ts --bundle --format=esm --platform=browser --outfile=public/scripts/api-client.js --sourcemap --watch",
 
-    "build": "npm run typecheck && npm run tw:build",
+    "dev": "concurrently -k -n tw,client \"npm:tw:watch\" \"npm:client:watch\"",
+    "dev:vercel": "vercel dev --listen 3000",
+    "dev:all": "concurrently -k -n tw,client,vercel \"npm:tw:watch\" \"npm:client:watch\" \"npm:dev:vercel\"",
+    "serve": "npm run dev:vercel",
+    "start": "npm run dev:vercel",
+
+    "build": "npm run typecheck && npm run tw:build && npm run client:build",
     "vercel-build": "npm run build",
+
+    "clean": "rm -rf .vercel/cache public/styles/app.css public/scripts/api-client.js public/scripts/api-client.js.map",
 
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -40,11 +48,18 @@
     "@vercel/node": "^3.2.0",
     "concurrently": "^9.2.1",
     "drizzle-kit": "^0.31.5",
+    "esbuild": "^0.23.0",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
-    "vercel": "^48.2.0"
+    "vercel": "^48.2.6"
   },
-  "engines": { "node": ">=18.17" },
-  "browserslist": ["defaults", "not IE 11", "maintained node versions"]
+  "engines": {
+    "node": ">=18.17"
+  },
+  "browserslist": [
+    "defaults",
+    "not IE 11",
+    "maintained node versions"
+  ]
 }

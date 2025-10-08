@@ -2,9 +2,11 @@
    Quantara Devnet-0 • internal use only
    (c) 2025 Quantara Technology LLC
    File: api/waitlist.ts
-   Purpose:
-     Accepts waitlist joins, verifies Cloudflare Turnstile, upserts user,
-     records referral SIGNUP events, and returns a short-lived email-verify JWT.
+
+   Accepts waitlist joins, verifies Cloudflare Turnstile, upserts user,
+   records referral SIGNUP events, and returns a short-lived email-verify JWT.
+
+   Response: { ok: true, data: { id, code, emailQueued }, meta?: { verifyToken } }
    ========================================================================== */
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";
@@ -12,34 +14,40 @@ import "dotenv/config";
 import { z } from "zod";
 import jwt from "jsonwebtoken";
 import { sql } from "drizzle-orm";
-import { getDb } from "../db/client.serverless.js";
+import { getDb } from "../db/client.serverless.js"; // <-- NodeNext requires .js
 
 /* ────────────────────────────────────────────────────────────────────────────
    CORS
    ────────────────────────────────────────────────────────────────────────── */
 function getAllowedOrigins(): string[] {
-  const raw = process.env.APP_URL ?? "*";
-  return raw === "*" ? ["*"] : raw.split(",").map((s) => s.trim()).filter(Boolean);
+  const raw =
+    process.env.ALLOWED_ORIGINS ??
+    process.env.APP_URL ??
+    "http://127.0.0.1:3000";
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
-function setCors(req: VercelRequest, res: VercelResponse) {
+function setCors(_req: VercelRequest, res: VercelResponse) {
   const origins = getAllowedOrigins();
-  const requestOrigin = (req.headers.origin as string) || "";
-  const allow =
-    origins.includes("*") || origins.includes(requestOrigin)
-      ? requestOrigin || origins[0]
-      : origins[0];
+  const allow = origins.includes("*") ? "*" : origins[0] || "*";
   res.setHeader("Vary", "Origin");
-  res.setHeader("Access-Control-Allow-Origin", allow || "*");
+  res.setHeader("Access-Control-Allow-Origin", allow);
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, cf-turnstile-response"
+  );
   res.setHeader("Access-Control-Max-Age", "600");
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
 }
 
-// Soft env checks (helpful locally)
-(["DATABASE_URL", "JWT_SECRET", "TURNSTILE_SECRET_KEY"] as const).forEach((k) => {
-  if (!process.env[k]) console.warn(`[waitlist] missing env ${k}`);
-});
+/* Soft env checks (helpful locally) */
+(["DATABASE_URL", "JWT_SECRET", "TURNSTILE_SECRET", "TURNSTILE_SECRET_KEY"] as const).forEach(
+  (k) => {
+    if (!process.env[k]) console.warn(`[waitlist] missing env ${k}`);
+  }
+);
 
 /* ────────────────────────────────────────────────────────────────────────────
    Validation
@@ -58,10 +66,11 @@ const JoinSchema = z.object({
   utm_campaign: z.string().max(64).optional(),
   utm_content: z.string().max(64).optional(),
   utm_term: z.string().max(64).optional(),
-  // Cloudflare Turnstile token (we accept several field names)
-  turnstileToken: z.string().min(5).optional(),
-  ["cf-turnstile-response"]: z.string().min(5).optional(),
-  cf_turnstile_response: z.string().min(5).optional(),
+
+  // Cloudflare Turnstile token (accept several field names)
+  turnstileToken: z.string().min(3).optional(),
+  ["cf-turnstile-response"]: z.string().min(3).optional(),
+  cf_turnstile_response: z.string().min(3).optional(),
 });
 
 /* ────────────────────────────────────────────────────────────────────────────
@@ -69,8 +78,10 @@ const JoinSchema = z.object({
    ────────────────────────────────────────────────────────────────────────── */
 async function verifyTurnstile(token: string, ip?: string) {
   if (process.env.NODE_ENV !== "production" && token === "TEST_BYPASS") return true;
-  const secret = process.env.TURNSTILE_SECRET_KEY || "";
-  if (!secret) return false;
+
+  const secret =
+    process.env.TURNSTILE_SECRET || process.env.TURNSTILE_SECRET_KEY || "";
+  if (!secret || !token) return false;
 
   const form = new URLSearchParams();
   form.set("secret", secret);
@@ -80,6 +91,7 @@ async function verifyTurnstile(token: string, ip?: string) {
   const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
     method: "POST",
     body: form,
+    headers: { "content-type": "application/x-www-form-urlencoded" },
   });
   if (!r.ok) return false;
   const data = await r.json().catch(() => ({} as any));
@@ -105,7 +117,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   setCors(req, res);
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") {
-    return res.status(405).json({ ok: false, error: "Method not allowed" });
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    return res.status(405).json({ ok: false, message: "Method not allowed" });
   }
 
   try {
@@ -123,27 +136,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const parsed = JoinSchema.safeParse({
       ...raw,
       turnstileToken:
-        raw["cf-turnstile-response"] ||
-        raw["cf_turnstile_response"] ||
-        raw["turnstileToken"] ||
+        raw["cf-turnstile-response"] ??
+        raw["cf_turnstile_response"] ??
+        raw["turnstileToken"] ??
         raw["token"],
     });
     if (!parsed.success) {
-      return res
-        .status(400)
-        .json({ ok: false, error: "Invalid payload", details: parsed.error.flatten() });
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      return res.status(400).json({
+        ok: false,
+        code: "BAD_REQUEST",
+        message: "Invalid payload",
+        details: parsed.error.flatten(),
+      });
     }
 
     const data = parsed.data;
     const token =
-      data["cf-turnstile-response"] || data["cf_turnstile_response"] || data.turnstileToken || "";
+      (data as any)["cf-turnstile-response"] ||
+      (data as any)["cf_turnstile_response"] ||
+      (data as any).turnstileToken ||
+      "";
     const ip =
       (req.headers["x-forwarded-for"] as string)?.split(",")[0]?.trim() ||
       (req.headers["x-real-ip"] as string) ||
       undefined;
 
     const human = await verifyTurnstile(token, ip);
-    if (!human) return res.status(401).json({ ok: false, error: "Human verification failed" });
+    if (!human) {
+      res.setHeader("Content-Type", "application/json; charset=utf-8");
+      return res
+        .status(401)
+        .json({ ok: false, code: "TURNSTILE_FAILED", message: "Human verification failed" });
+    }
 
     const db = await getDb();
 
@@ -160,7 +185,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
     const utmJson = sql`jsonb_strip_nulls(${JSON.stringify(utmPayload)}::jsonb)`;
 
-    // 1) Look up existing user by case-insensitive email (matches UNIQUE lower(email))
+    // 1) Look up existing user by case-insensitive email
     const existingQ = sql<{ id: string; email: string; referral_code: string | null }>`
       SELECT id, email, referral_code
         FROM user_account
@@ -189,7 +214,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const updRows = getRows(await db.execute(updateQ));
       const current =
         updRows?.[0] ??
-        { id: existing.id, email: existing.email, referral_code: existing.referral_code };
+        ({ id: existing.id, email: existing.email, referral_code: existing.referral_code } as const);
 
       // ensure referral_code exists (retry on unique collision)
       let rc = current.referral_code ?? "";
@@ -263,15 +288,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       { expiresIn: "2d", algorithm: "HS256", issuer: "quantara", audience: "user" }
     );
 
+    // TODO: enqueue verification email here; for now we mark as not queued
+    const emailQueued = false;
+
     res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
     return res.status(200).json({
       ok: true,
-      code: user.referral_code,
-      user: { email: user.email, referral_code: user.referral_code },
-      verifyToken,
+      data: { id: user.id, code: user.referral_code, emailQueued },
+      meta: { verifyToken },
     });
   } catch (err) {
     console.error("[waitlist] error:", err);
-    return res.status(500).json({ ok: false, error: "Internal error" });
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    return res
+      .status(500)
+      .json({ ok: false, code: "INTERNAL", message: "Internal error, please try again." });
   }
 }
