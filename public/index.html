@@ -8,7 +8,8 @@
   <meta name="description" content="Join the Quantara Devnet-0 waitlist for early faucet access to QTR (testnet), priority onboarding, and Founding Member recognition." />
   <meta name="theme-color" content="#0a0b0d">
   <meta name="color-scheme" content="dark">
-  <link rel="icon" href="/assets/favicon.ico" type="image/svg+xml"/>
+  <!-- Neutralize favicon to avoid CSP/image requests -->
+  <link rel="icon" href="data:,">
   <link rel="canonical" href="https://www.quantara-waitlist.com/" />
   <meta name="robots" content="index,follow">
 
@@ -16,29 +17,31 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="Quantara Devnet-0 Waitlist — Be a Founding Member">
   <meta property="og:description" content="6-second blocks • SS58=73 • 12 decimals • Post-quantum ready. Join the waitlist for faucet & wallet access.">
-  <meta property="og:image" content="/assets/og-image.png">
+  <meta property="og:image" content="https://www.quantara-waitlist.com/assets/og-image.png">
   <meta property="og:url" content="https://www.quantara-waitlist.com/">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Quantara Devnet-0 Waitlist — Be a Founding Member">
   <meta name="twitter:description" content="6-second blocks • SS58=73 • 12 decimals • Post-quantum ready. Join the waitlist for faucet & wallet access.">
-  <meta name="twitter:image" content="/assets/og-image.png">
+  <meta name="twitter:image" content="https://www.quantara-waitlist.com/assets/og-image.png">
 
   <!-- Hints -->
-  <link rel="preconnect" href="https://challenges.cloudflare.com" />
-  <link rel="dns-prefetch" href="https://challenges.cloudflare.com" />
+  <link rel="preconnect" href="https://challenges.cloudflare.com">
+  <link rel="dns-prefetch" href="https://challenges.cloudflare.com">
   <link rel="preconnect" href="https://api.quantara.xyz" crossorigin>
   <link rel="dns-prefetch" href="https://api.quantara.xyz">
 
-  <!-- Optional perf: preload hero bg if you have a file (safe; no visual change) -->
-  <!-- <link rel="preload" href="/assets/bg-grid.webp" as="image" type="image/webp" imagesrcset="/assets/bg-grid.webp"> -->
+  <!-- Optional perf: preload hero bg if you have a file -->
+  <!-- <link rel="preload" href="/assets/bg-grid.webp" as="image" type="image/webp"> -->
 
   <!-- Tailwind (CDN build kept) -->
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Cloudflare Turnstile (human check) -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+</head>
+
 
   <script>
     tailwind.config = {
