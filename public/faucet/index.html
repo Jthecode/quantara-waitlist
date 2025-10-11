@@ -1,17 +1,243 @@
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Quantara Faucet — Coming Soon</title>
-<link rel="icon" href="data:,"><script src="https://cdn.tailwindcss.com"></script>
-</head><body class="min-h-screen bg-black text-white">
-<main class="max-w-3xl mx-auto px-6 py-16">
-  <a href="/" class="text-sm opacity-70 hover:opacity-100">&larr; Back to Waitlist</a>
-  <header class="mt-6">
-    <h1 class="text-4xl font-semibold">Quantara Faucet</h1>
-    <p class="mt-3 text-zinc-300">Claim QTR (testnet) for Devnet-0.</p>
-  </header>
-  <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
-    <p class="text-lg">Faucet UI will unlock with Devnet-0.</p>
-    <p class="mt-2">Until then, <a class="underline hover:no-underline" href="/">join the waitlist</a>.</p>
-  </section>
-</main>
-</body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Quantara Faucet — Devnet-0</title>
+  <meta name="description" content="Claim QTR (testnet) for Quantara Devnet-0. Opens when the network goes live."/>
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Turnstile is optional; if present we'll render it after go-live -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+  <style>
+    .skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.06)}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+      animation:shimmer 1.2s linear infinite}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+    @media (prefers-reduced-motion: reduce){.skeleton::after{animation:none}}
+    pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace }
+  </style>
+</head>
+<body class="min-h-screen bg-black text-white selection:bg-yellow-500/30">
+  <main class="max-w-4xl mx-auto px-6 py-16">
+    <a href="/" class="text-sm opacity-70 hover:opacity-100 transition">&larr; Back to Waitlist</a>
+
+    <header class="mt-6">
+      <div class="flex items-center gap-3">
+        <h1 class="text-4xl font-semibold tracking-tight">Quantara Faucet</h1>
+        <span id="badge" class="text-xs rounded-md px-2 py-1 border border-zinc-800 bg-zinc-900/70">Preview</span>
+      </div>
+      <p class="mt-2 text-zinc-300">
+        Claim <strong>QTR</strong> (testnet) for Devnet-0. Testnet tokens have <strong>no monetary value</strong>.
+      </p>
+    </header>
+
+    <!-- When /api/config is available, hydrate these -->
+    <section class="mt-6 grid md:grid-cols-2 gap-4">
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Release</div>
+        <time id="releaseAt" class="mt-1 block text-lg font-medium">TBD</time>
+        <p id="countdown" class="mt-1 text-sm text-zinc-400">—</p>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">RPC (WS)</div>
+        <div id="rpc" class="mt-1 truncate text-lg font-medium">wss://rpc.devnet-0.quantara.xyz</div>
+        <p class="mt-1 text-xs text-zinc-500">Configured from <code>/api/config</code></p>
+      </div>
+    </section>
+
+    <section class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">SS58</div>
+        <div id="ss58" class="mt-1 text-2xl font-semibold tabular-nums">73</div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Decimals</div>
+        <div id="decimals" class="mt-1 text-2xl font-semibold tabular-nums">12</div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Height</div>
+        <div id="height" class="mt-1 text-2xl font-semibold tabular-nums">
+          <span class="inline-block w-24 h-6 rounded skeleton"></span>
+        </div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Peers</div>
+        <div id="peers" class="mt-1 text-2xl font-semibold tabular-nums">
+          <span class="inline-block w-12 h-6 rounded skeleton"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Claim card -->
+    <section class="mt-8 p-6 rounded-2xl border border-zinc-800 bg-zinc-900/60">
+      <h2 class="text-xl font-semibold">Claim QTR (testnet)</h2>
+      <p class="mt-1 text-zinc-400 text-sm">
+        Use your <strong>SS58=73</strong> address. Claims open when Devnet-0 is live.
+      </p>
+
+      <form id="claimForm" class="mt-4 space-y-3" onsubmit="return false;">
+        <label class="block text-sm text-zinc-300">Your Quantara address</label>
+        <input id="addr" type="text" inputmode="text" autocomplete="off" spellcheck="false"
+               placeholder="5F.... (SS58=73)"
+               class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 outline-none focus:border-zinc-400"
+               disabled>
+
+        <!-- Optional Turnstile placeholder -->
+        <div id="ts-wrap" class="hidden">
+          <div id="turnstile-container" class="mt-2"></div>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 pt-1">
+          <button id="claimBtn"
+                  class="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-medium text-black hover:bg-yellow-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled>Claim</button>
+          <a href="/wallet/" class="rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800 transition">Open Wallet</a>
+          <a href="/explorer/" class="rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800 transition">Explorer</a>
+        </div>
+
+        <p id="claimMsg" class="mt-2 text-sm"></p>
+      </form>
+
+      <!-- Rules -->
+      <div class="mt-6 grid md:grid-cols-2 gap-3 text-sm text-zinc-400">
+        <ul class="list-disc list-inside space-y-1">
+          <li>Per-address: limited claims per 24h</li>
+          <li>Per-IP: limited claims per 24h</li>
+          <li>Human check required (Turnstile)</li>
+        </ul>
+        <ul class="list-disc list-inside space-y-1">
+          <li>Use for testing only; no monetary value</li>
+          <li>Abuse may result in temporary blocks</li>
+          <li>Logs retained briefly for anti-abuse</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer class="mt-10 text-xs text-zinc-500">
+      © 2025 Quantara Technology LLC — Devnet-0 • SS58=73 • Avg block ≈ 6s
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      // ---- Release fallback (7 days from now) ----
+      // Use config.releaseAt if available; otherwise this ISO is used.
+      const FALLBACK_RELEASE_AT_ISO = '2025-10-17T17:00:00Z'; // <-- faucet goes live
+
+      // ---- Your real Turnstile site key ----
+      window.TURNSTILE_SITE_KEY = '0x4AAAAAAB5BBZiG4VTPYuEi';
+
+      const $ = (id) => document.getElementById(id);
+      const state = { live: false, tsToken: null, releaseAt: null };
+
+      const setNum = (el, v) => { el?.classList?.remove('skeleton'); el.textContent = (typeof v === 'number') ? v.toLocaleString() : '—'; };
+
+      function fmtDT(d){ return new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(d); }
+
+      async function getJSON(path, ms=5000){
+        const ctrl = new AbortController(); const to=setTimeout(()=>ctrl.abort(), ms);
+        try{
+          const r=await fetch(path,{signal:ctrl.signal,credentials:'same-origin'});
+          if(!r.ok) return null;
+          return await r.json();
+        } catch{
+          return null;
+        } finally{ clearTimeout(to); }
+      }
+
+      function tickCountdown(){
+        const iso = state.releaseAt;
+        if (!iso) { $('countdown').textContent = '—'; return; }
+        const now = Date.now();
+        const t = new Date(iso).getTime();
+        if (!Number.isFinite(t)) { $('countdown').textContent = '—'; return; }
+
+        if (now >= t) {
+          $('badge').textContent = 'Live';
+          $('countdown').textContent = 'Live';
+          enableForm();
+          return;
+        }
+        const s = Math.max(0, Math.floor((t-now)/1000));
+        const d = Math.floor(s/86400), h = Math.floor((s%86400)/3600), m = Math.floor((s%3600)/60);
+        $('countdown').textContent = `${d}d ${h}h ${m}m`;
+      }
+
+      function setRelease(iso){
+        state.releaseAt = iso;
+        const dt = new Date(iso);
+        $('releaseAt').dateTime = dt.toISOString();
+        $('releaseAt').textContent = fmtDT(dt);
+        tickCountdown();
+        setInterval(tickCountdown, 30_000);
+        if (Date.now() >= dt.getTime()) enableForm();
+      }
+
+      function enableForm(){
+        if (state.live) return;
+        state.live = true;
+        $('addr').disabled = false;
+        $('claimBtn').disabled = false;
+        // If Turnstile is available, render it
+        if (window.turnstile) {
+          $('ts-wrap').classList.remove('hidden');
+          window.turnstile.render('#turnstile-container', {
+            sitekey: window.TURNSTILE_SITE_KEY,
+            theme: 'dark',
+            callback: (token) => { state.tsToken = token; }
+          });
+        }
+      }
+
+      async function hydrateConfig(){
+        const wrap = await getJSON('/api/config');
+        const cfg = wrap?.data || wrap || null;
+        if (cfg) {
+          if (cfg.rpcWS) $('rpc').textContent = cfg.rpcWS;
+          if (cfg.ss58Prefix != null) $('ss58').textContent = String(cfg.ss58Prefix);
+          if (cfg.tokenDecimals != null) $('decimals').textContent = String(cfg.tokenDecimals);
+          if (cfg.releaseAt) {
+            setRelease(cfg.releaseAt);
+            return;
+          }
+        }
+        // No API or missing releaseAt -> use fallback
+        setRelease(FALLBACK_RELEASE_AT_ISO);
+      }
+
+      async function hydrateMetrics(){
+        const wrap = await getJSON('/api/metrics');
+        const m = wrap?.data || wrap || null;
+        setNum($('height'), m?.height);
+        setNum($('peers'), m?.peers);
+      }
+
+      // Fake submit (wire when /api/faucet exists)
+      $('claimBtn').addEventListener('click', async () => {
+        const addr = $('addr').value.trim();
+        const msg = $('claimMsg');
+        msg.className = 'mt-2 text-sm';
+
+        if (!state.live) { msg.textContent = 'Not live yet.'; return; }
+        if (!addr)      { msg.textContent = 'Enter your SS58=73 address.'; return; }
+
+        // When your backend is ready, POST here:
+        // const res = await fetch('/api/faucet', { method:'POST', headers:{'Content-Type':'application/json'},
+        //   body: JSON.stringify({ address: addr, turnstile: state.tsToken }) });
+        // const json = await res.json();
+
+        msg.classList.add('text-zinc-300');
+        msg.textContent = 'Claim submitted (demo). Backend wiring required.';
+      });
+
+      // Boot
+      hydrateConfig();
+      hydrateMetrics();
+      setInterval(hydrateMetrics, 10000);
+    })();
+  </script>
+</body>
+</html>
