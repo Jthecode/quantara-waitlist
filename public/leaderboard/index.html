@@ -1,13 +1,218 @@
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Quantara Leaderboard — Coming Soon</title>
-<link rel="icon" href="data:,"><script src="https://cdn.tailwindcss.com"></script>
-</head><body class="min-h-screen bg-black text-white">
-<main class="max-w-3xl mx-auto px-6 py-16">
-  <a href="/" class="text-sm opacity-70 hover:opacity-100">&larr; Back to Waitlist</a>
-  <h1 class="mt-6 text-4xl font-semibold">Referral Leaderboard</h1>
-  <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
-    <p class="text-lg">Once referrals go live, rankings will appear here.</p>
-  </section>
-</main>
-</body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Quantara Leaderboard — Devnet-0 (Coming Soon)</title>
+  <meta name="description" content="Referral leaderboard placeholder for Quantara Devnet-0 with a live waitlist snapshot and your share link."/>
+  <meta name="theme-color" content="#0a0b0d">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.06)}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+      animation:shimmer 1.2s linear infinite}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+    @media (prefers-reduced-motion: reduce){.skeleton::after{animation:none}}
+  </style>
+</head>
+<body class="min-h-screen bg-black text-white selection:bg-yellow-500/30">
+  <main class="max-w-5xl mx-auto px-6 py-12">
+    <header class="flex items-center justify-between gap-4">
+      <a href="/" class="text-sm opacity-70 hover:opacity-100 transition">&larr; Back to Waitlist</a>
+      <nav class="flex items-center gap-2 text-sm">
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/wallet/">Wallet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/faucet/">Faucet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/explorer/">Explorer</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/status/">Status</a>
+      </nav>
+    </header>
+
+    <h1 class="mt-6 text-3xl md:text-4xl font-semibold tracking-tight">Referral Leaderboard</h1>
+    <p class="mt-2 text-zinc-400">Referrals unlock early access and Founding Member perks. Live rankings will appear here at launch.</p>
+
+    <!-- Live snapshot -->
+    <section class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Waitlist</div>
+        <div class="mt-1 text-2xl font-semibold tabular-nums" id="waitlistCount">
+          <span class="inline-block w-24 h-6 skeleton rounded"></span>
+        </div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Countries</div>
+        <div class="mt-1 text-2xl font-semibold tabular-nums" id="countryCount">
+          <span class="inline-block w-16 h-6 skeleton rounded"></span>
+        </div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Avg block (s)</div>
+        <div class="mt-1 text-lg font-medium" id="avgBlock">6</div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">SS58</div>
+        <div class="mt-1 text-lg font-medium" id="ss58">73</div>
+      </div>
+    </section>
+
+    <!-- Your referral -->
+    <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
+      <h2 class="text-xl font-semibold">Your referral link</h2>
+      <p class="mt-1 text-zinc-400 text-sm">Share this link. Friends who join will count toward your rank. Testnet tokens have no monetary value.</p>
+      <div class="mt-4 flex flex-col sm:flex-row gap-3">
+        <input id="refLink" class="w-full px-3 py-2 rounded-lg bg-zinc-950 border border-zinc-800"
+               type="url" value="" readonly inputmode="url" aria-label="Referral URL">
+        <button id="copyBtn" class="px-4 py-2 rounded-lg bg-yellow-500 text-black font-medium hover:bg-yellow-400 transition">
+          Copy
+        </button>
+        <a id="shareX" class="px-4 py-2 rounded-lg border border-zinc-800 hover:bg-zinc-900 transition text-center"
+           href="#" target="_blank" rel="noopener noreferrer">Share on X</a>
+      </div>
+      <p class="mt-2 text-xs text-zinc-500">Your code: <code id="refCode" class="px-1.5 py-0.5 bg-zinc-800 rounded">—</code></p>
+    </section>
+
+    <!-- Leaderboard table (placeholder) -->
+    <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">Top Referrers</h2>
+        <span class="text-xs text-zinc-400">Updating at launch</span>
+      </div>
+      <div class="mt-4 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead class="text-zinc-400 border-b border-zinc-800">
+            <tr>
+              <th class="text-left py-2 pr-3">Rank</th>
+              <th class="text-left py-2 pr-3">Code</th>
+              <th class="text-left py-2 pr-3">Referrals</th>
+            </tr>
+          </thead>
+          <tbody id="tbody" class="align-top">
+            <!-- Placeholder rows -->
+            <tr class="border-b border-zinc-900/60">
+              <td class="py-2 pr-3">1</td>
+              <td class="py-2 pr-3"><span class="inline-block w-20 h-4 skeleton rounded"></span></td>
+              <td class="py-2 pr-3"><span class="inline-block w-10 h-4 skeleton rounded"></span></td>
+            </tr>
+            <tr class="border-b border-zinc-900/60">
+              <td class="py-2 pr-3">2</td>
+              <td class="py-2 pr-3"><span class="inline-block w-16 h-4 skeleton rounded"></span></td>
+              <td class="py-2 pr-3"><span class="inline-block w-10 h-4 skeleton rounded"></span></td>
+            </tr>
+            <tr class="border-b border-zinc-900/60">
+              <td class="py-2 pr-3">3</td>
+              <td class="py-2 pr-3"><span class="inline-block w-14 h-4 skeleton rounded"></span></td>
+              <td class="py-2 pr-3"><span class="inline-block w-10 h-4 skeleton rounded"></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="mt-3 text-zinc-500 text-xs">We’ll publish full rankings once referrals are live.</p>
+    </section>
+
+    <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
+      <h3 class="text-lg font-semibold">How it works</h3>
+      <ul class="mt-2 list-disc list-inside text-zinc-300 space-y-1">
+        <li>Share your referral link — it includes your code (<code>?ref=ABCDE1</code>).</li>
+        <li>Unique, verified sign-ups count toward your rank.</li>
+        <li>Ties break by timestamp (earlier wins).</li>
+      </ul>
+    </section>
+
+    <footer class="mt-10 text-xs text-zinc-500">
+      © 2025 Quantara Technology LLC — Devnet-0 • SS58=73 • Avg block ≈ 6s
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      const ORIGIN = location.origin || (location.protocol + '//' + location.host);
+      const HOME   = ORIGIN + '/';
+      const STORAGE_KEY = 'quantara_ref_code';
+
+      const $ = (id) => document.getElementById(id);
+
+      // Build or recall referral code
+      const params  = new URLSearchParams(location.search);
+      const urlCode = (params.get('ref') || params.get('code') || '').trim();
+
+      function makeCode(len = 6) {
+        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let out = '';
+        for (let i = 0; i < len; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+        return out;
+      }
+
+      let saved = localStorage.getItem(STORAGE_KEY) || '';
+      if (!saved) {
+        saved = makeCode(6);
+        localStorage.setItem(STORAGE_KEY, saved);
+      }
+      const code = urlCode || saved;
+      if (urlCode && urlCode !== saved) localStorage.setItem(STORAGE_KEY, urlCode);
+
+      // Share URL
+      const shareUrl = new URL(HOME);
+      shareUrl.searchParams.set('ref', code);
+      shareUrl.searchParams.set('utm_source', 'referral');
+      shareUrl.searchParams.set('utm_medium', 'share');
+      shareUrl.searchParams.set('utm_campaign', 'leaderboard');
+
+      // Populate referral UI
+      $('refCode').textContent = code;
+      $('refLink').value = shareUrl.toString();
+      const text = encodeURIComponent('Join the Quantara Devnet-0 waitlist. Be a Founding Member →');
+      $('shareX').href = `https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(shareUrl.toString())}`;
+
+      $('copyBtn').addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(shareUrl.toString());
+          $('copyBtn').textContent = 'Copied!';
+          setTimeout(() => $('copyBtn').textContent = 'Copy', 1200);
+        } catch {
+          const input = $('refLink');
+          input.removeAttribute('readonly');
+          input.select();
+          document.execCommand('copy');
+          input.setAttribute('readonly', '');
+          $('copyBtn').textContent = 'Copied!';
+          setTimeout(() => $('copyBtn').textContent = 'Copy', 1200);
+        }
+      });
+
+      // Tiny fetch with timeout
+      async function getJSON(path, ms = 5000) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), ms);
+        try {
+          const r = await fetch(path, { signal: ctrl.signal, credentials: 'same-origin' });
+          if (!r.ok) return null;
+          return await r.json();
+        } catch { return null; }
+        finally { clearTimeout(t); }
+      }
+
+      // Hydrate metrics (waitlist + countries + static params)
+      async function hydrateMetrics() {
+        const res = await getJSON('/api/metrics');
+        const m = res?.data || res || null;
+        if (!m) return;
+
+        if (typeof m.waitlistCount === 'number') $('waitlistCount').textContent = m.waitlistCount.toLocaleString();
+        else $('waitlistCount').textContent = '—';
+
+        if (typeof m.countryCount === 'number') $('countryCount').textContent = m.countryCount.toLocaleString();
+        else $('countryCount').textContent = '—';
+
+        if (typeof m.avgBlockSeconds === 'number') $('avgBlock').textContent = String(m.avgBlockSeconds);
+        if (typeof m.ss58Prefix === 'number') $('ss58').textContent = String(m.ss58Prefix);
+      }
+
+      hydrateMetrics();
+      setInterval(hydrateMetrics, 10000);
+    })();
+  </script>
+</body>
+</html>

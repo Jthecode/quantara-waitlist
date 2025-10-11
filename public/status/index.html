@@ -1,13 +1,218 @@
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Quantara Status — Coming Soon</title>
-<link rel="icon" href="data:,"><script src="https://cdn.tailwindcss.com"></script>
-</head><body class="min-h-screen bg-black text-white">
-<main class="max-w-3xl mx-auto px-6 py-16">
-  <a href="/" class="text-sm opacity-70 hover:opacity-100">&larr; Back to Waitlist</a>
-  <h1 class="mt-6 text-4xl font-semibold">Network Status</h1>
-  <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
-    <p class="text-lg">Live status dashboard will appear here near Devnet-0.</p>
-  </section>
-</main>
-</body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Quantara Status — Devnet-0 (Live Snapshot)</title>
+  <meta name="description" content="Quantara Devnet-0 status snapshot: APIs, live node metrics, and release info."/>
+  <meta name="theme-color" content="#0a0b0d">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="data:,">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.2rem .5rem;border-radius:.5rem;font-size:.75rem}
+    .ok{color:#0f0;background:rgba(0,255,0,.1);border:1px solid rgba(0,255,0,.25)}
+    .warn{color:#ff0;background:rgba(255,255,0,.1);border:1px solid rgba(255,255,0,.25)}
+    .err{color:#f66;background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.25)}
+    .skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.06)}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+      animation:shimmer 1.2s linear infinite}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+    @media (prefers-reduced-motion: reduce){.skeleton::after{animation:none}}
+  </style>
+</head>
+<body class="min-h-screen bg-black text-white selection:bg-yellow-500/30">
+  <main class="max-w-5xl mx-auto px-6 py-12">
+    <header class="flex items-center justify-between gap-4">
+      <a href="/" class="text-sm opacity-70 hover:opacity-100 transition">&larr; Back to Waitlist</a>
+      <nav class="flex items-center gap-2 text-sm">
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/wallet/">Wallet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/faucet/">Faucet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/explorer/">Explorer</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/leaderboard/">Leaderboard</a>
+      </nav>
+    </header>
+
+    <h1 class="mt-6 text-3xl md:text-4xl font-semibold tracking-tight">Network Status</h1>
+    <p class="mt-2 text-zinc-400">Live snapshot of Devnet-0. Testnet tokens have no monetary value.</p>
+
+    <!-- Live network snapshot -->
+    <section class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Network</div>
+        <div id="chainName" class="mt-1 text-lg font-medium">Devnet-0</div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">SS58</div>
+        <div id="ss58" class="mt-1 text-lg font-medium" data-fallback="73">73</div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Avg block (s)</div>
+        <div id="avgBlock" class="mt-1 text-lg font-medium" data-fallback="6">6</div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Release</div>
+        <time id="releaseAt" class="mt-1 block text-lg font-medium">TBD</time>
+      </div>
+
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:col-span-2 lg:col-span-1">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Height</div>
+        <div id="height" class="mt-1 text-2xl font-semibold tabular-nums">
+          <span class="inline-block w-28 h-6 skeleton rounded"></span>
+        </div>
+      </div>
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:col-span-2 lg:col-span-1">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Peers</div>
+        <div id="peers" class="mt-1 text-2xl font-semibold tabular-nums">
+          <span class="inline-block w-16 h-6 skeleton rounded"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Service checks -->
+    <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">Service Checks</h2>
+        <div class="text-xs text-zinc-400">Last updated: <time id="updatedAt">—</time></div>
+      </div>
+
+      <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div class="rounded-lg border border-zinc-800 p-4">
+          <div class="text-sm text-zinc-400">/api/health</div>
+          <div class="mt-2 flex items-center justify-between">
+            <span id="healthBadge" class="badge skeleton">&nbsp;</span>
+            <span id="healthLatency" class="text-xs text-zinc-400 tabular-nums">— ms</span>
+          </div>
+          <div id="healthEnv" class="mt-1 text-xs text-zinc-500">env: —</div>
+        </div>
+
+        <div class="rounded-lg border border-zinc-800 p-4">
+          <div class="text-sm text-zinc-400">/api/config</div>
+          <div class="mt-2 flex items-center justify-between">
+            <span id="configBadge" class="badge skeleton">&nbsp;</span>
+            <span id="configLatency" class="text-xs text-zinc-400 tabular-nums">— ms</span>
+          </div>
+          <div id="configRpc" class="mt-1 text-xs text-zinc-500 truncate">rpc: —</div>
+        </div>
+
+        <div class="rounded-lg border border-zinc-800 p-4">
+          <div class="text-sm text-zinc-400">/api/metrics</div>
+          <div class="mt-2 flex items-center justify-between">
+            <span id="metricsBadge" class="badge skeleton">&nbsp;</span>
+            <span id="metricsLatency" class="text-xs text-zinc-400 tabular-nums">— ms</span>
+          </div>
+          <div id="metricsCounts" class="mt-1 text-xs text-zinc-500">waitlist: — • countries: —</div>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center gap-2">
+        <button id="refreshBtn" class="px-3 py-2 rounded-lg bg-yellow-500 text-black text-sm font-medium hover:bg-yellow-400 transition">
+          Refresh
+        </button>
+        <span class="text-xs text-zinc-500">Auto-refresh every 10s</span>
+      </div>
+    </section>
+
+    <footer class="mt-10 text-xs text-zinc-500">
+      © 2025 Quantara Technology LLC — Devnet-0 • SS58=73 • Avg block ≈ 6s
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      const $ = (id) => document.getElementById(id);
+      const fmtDT = (d) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(d);
+
+      function setBadge(el, ok, warn=false){
+        el.classList.remove('skeleton','ok','warn','err');
+        el.textContent = ok ? 'OK' : (warn ? 'WARN' : 'ERROR');
+        el.classList.add(ok ? 'ok' : (warn ? 'warn' : 'err'), 'badge');
+      }
+
+      async function timedJSON(path, ms=5000) {
+        const ctrl = new AbortController();
+        const t0 = performance.now();
+        const to = setTimeout(() => ctrl.abort(), ms);
+        try {
+          const r = await fetch(path, { signal: ctrl.signal, credentials: 'same-origin' });
+          const t1 = performance.now();
+          const latency = Math.round(t1 - t0);
+          if (!r.ok) return { ok: false, latency, data: null };
+          const json = await r.json();
+          return { ok: true, latency, data: json?.data ?? json };
+        } catch {
+          const t1 = performance.now();
+          return { ok: false, latency: Math.round(t1 - t0), data: null };
+        } finally {
+          clearTimeout(to);
+        }
+      }
+
+      async function hydrateConfig(){
+        const r = await timedJSON('/api/config');
+        $('configLatency').textContent = r.latency + ' ms';
+        if (r.ok && r.data){
+          setBadge($('configBadge'), true);
+          if (r.data.rpcWS) $('configRpc').textContent = 'rpc: ' + r.data.rpcWS;
+          if (r.data.chainName) $('chainName').textContent = r.data.chainName;
+          if (typeof r.data.ss58Prefix === 'number') $('ss58').textContent = String(r.data.ss58Prefix);
+          if (typeof r.data.avgBlockSeconds === 'number') $('avgBlock').textContent = String(r.data.avgBlockSeconds);
+          if (r.data.releaseAt) {
+            const dt = new Date(r.data.releaseAt);
+            $('releaseAt').dateTime = dt.toISOString();
+            $('releaseAt').textContent = fmtDT(dt);
+          }
+        } else {
+          setBadge($('configBadge'), false);
+          $('configRpc').textContent = 'rpc: —';
+        }
+      }
+
+      async function hydrateMetrics(){
+        const r = await timedJSON('/api/metrics');
+        $('metricsLatency').textContent = r.latency + ' ms';
+        if (r.ok && r.data){
+          setBadge($('metricsBadge'), true);
+          const m = r.data;
+          if (typeof m.height === 'number') $('height').textContent = m.height.toLocaleString();
+          else $('height').textContent = '—';
+          if (typeof m.peers === 'number') $('peers').textContent = String(m.peers);
+          else $('peers').textContent = '—';
+          $('metricsCounts').textContent =
+            `waitlist: ${typeof m.waitlistCount==='number'?m.waitlistCount.toLocaleString():'—'} • countries: ${typeof m.countryCount==='number'?m.countryCount.toLocaleString():'—'}`;
+          if (typeof m.ss58Prefix === 'number') $('ss58').textContent = String(m.ss58Prefix);
+          if (typeof m.avgBlockSeconds === 'number') $('avgBlock').textContent = String(m.avgBlockSeconds);
+        } else {
+          setBadge($('metricsBadge'), false);
+          $('metricsCounts').textContent = 'waitlist: — • countries: —';
+          $('height').textContent = '—';
+          $('peers').textContent = '—';
+        }
+      }
+
+      async function hydrateHealth(){
+        const r = await timedJSON('/api/health');
+        $('healthLatency').textContent = r.latency + ' ms';
+        if (r.ok && r.data && (r.data.ok || r.data.db === 'up')){
+          setBadge($('healthBadge'), true);
+          $('healthEnv').textContent = 'env: ' + (r.data.env || 'unknown');
+        } else {
+          setBadge($('healthBadge'), false);
+          $('healthEnv').textContent = 'env: —';
+        }
+      }
+
+      async function hydrateAll(){
+        $('updatedAt').textContent = fmtDT(new Date());
+        await Promise.all([hydrateHealth(), hydrateConfig(), hydrateMetrics()]);
+      }
+
+      $('refreshBtn').addEventListener('click', hydrateAll);
+      hydrateAll();
+      setInterval(hydrateAll, 10000); // 10s
+    })();
+  </script>
+</body>
+</html>

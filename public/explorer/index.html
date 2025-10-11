@@ -1,13 +1,187 @@
-<!doctype html><html lang="en"><head>
-<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Quantara Explorer — Coming Soon</title>
-<link rel="icon" href="data:,"><script src="https://cdn.tailwindcss.com"></script>
-</head><body class="min-h-screen bg-black text-white">
-<main class="max-w-3xl mx-auto px-6 py-16">
-  <a href="/" class="text-sm opacity-70 hover:opacity-100">&larr; Back to Waitlist</a>
-  <h1 class="mt-6 text-4xl font-semibold">Quantara Explorer</h1>
-  <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
-    <p class="text-lg">Block explorer is in progress. We’ll announce when it’s ready.</p>
-  </section>
-</main>
-</body></html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>Quantara Explorer — Devnet-0 (Coming Soon)</title>
+  <meta name="description" content="Quantara Devnet-0 block explorer placeholder with live network snapshot and links to wallet, faucet, and status." />
+  <meta name="theme-color" content="#0a0b0d" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="robots" content="noindex" />
+
+  <!-- Favicon kept inline to avoid CSP/image host changes -->
+  <link rel="icon" href="data:,">
+
+  <!-- Tailwind CDN (allowed in your CSP) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* small, CSP-safe skeleton shimmer */
+    .skeleton{
+      position:relative; overflow:hidden; background-color:rgba(255,255,255,.06)
+    }
+    .skeleton::after{
+      content:""; position:absolute; inset:0;
+      transform:translateX(-100%);
+      background:linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
+      animation:shimmer 1.2s linear infinite;
+    }
+    @media (prefers-reduced-motion: reduce){
+      .skeleton::after{ animation:none }
+    }
+    @keyframes shimmer{ 100% { transform:translateX(100%) } }
+  </style>
+</head>
+<body class="min-h-screen bg-black text-white selection:bg-yellow-500/30">
+  <main class="max-w-5xl mx-auto px-6 py-12">
+    <header class="flex items-center justify-between gap-4">
+      <a href="/" class="text-sm opacity-70 hover:opacity-100 transition">&larr; Back to Waitlist</a>
+      <nav class="flex items-center gap-2 text-sm">
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/wallet/">Wallet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/faucet/">Faucet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/status/">Status</a>
+      </nav>
+    </header>
+
+    <h1 class="mt-6 text-3xl md:text-4xl font-semibold tracking-tight">Quantara Explorer</h1>
+    <p class="mt-2 text-zinc-400">
+      Devnet-0 explorer is in progress. While we finish it up, here’s a live snapshot of the network and key links.
+    </p>
+
+    <!-- Live Snapshot -->
+    <section class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Network</div>
+        <div class="mt-1 text-lg font-medium" id="chainName" aria-live="polite">Devnet-0</div>
+      </div>
+
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">SS58</div>
+        <div class="mt-1 text-lg font-medium" id="ss58" aria-live="polite" data-fallback="73">73</div>
+      </div>
+
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Avg block (s)</div>
+        <div class="mt-1 text-lg font-medium" id="avgBlock" aria-live="polite" data-fallback="6">6</div>
+      </div>
+
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Release</div>
+        <time class="mt-1 block text-lg font-medium" id="releaseAt" aria-live="polite">TBD</time>
+      </div>
+
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:col-span-2 lg:col-span-1">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Height</div>
+        <div class="mt-1 text-2xl font-semibold tabular-nums" id="height" aria-live="polite">
+          <span class="inline-block w-28 h-6 skeleton rounded"></span>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:col-span-2 lg:col-span-1">
+        <div class="text-xs uppercase tracking-wide text-zinc-400">Peers</div>
+        <div class="mt-1 text-2xl font-semibold tabular-nums" id="peers" aria-live="polite">
+          <span class="inline-block w-16 h-6 skeleton rounded"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Coming Soon Panel -->
+    <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
+      <h2 class="text-xl font-semibold">Explorer: Coming Soon</h2>
+      <p class="mt-2 text-zinc-300">
+        We’re polishing core views:
+      </p>
+      <ul class="mt-3 list-disc list-inside text-zinc-300 space-y-1">
+        <li>Latest blocks & transactions</li>
+        <li>Account pages with balance & transfers</li>
+        <li>Validator & era insights (staking overview)</li>
+        <li>Simple search by hash / address</li>
+      </ul>
+      <p class="mt-3 text-zinc-400 text-sm">
+        Testnet tokens have no monetary value.
+      </p>
+    </section>
+
+    <!-- Useful links -->
+    <section class="mt-8 grid sm:grid-cols-2 gap-4">
+      <a href="/" class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 hover:bg-zinc-900 transition">
+        <div class="text-sm text-zinc-400">Get access</div>
+        <div class="text-lg font-medium">Waitlist &rarr;</div>
+      </a>
+      <a href="/leaderboard/" class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 hover:bg-zinc-900 transition">
+        <div class="text-sm text-zinc-400">Community</div>
+        <div class="text-lg font-medium">Leaderboard &rarr;</div>
+      </a>
+    </section>
+
+    <footer class="mt-10 text-xs text-zinc-500">
+      © 2025 Quantara Technology LLC — Devnet-0 • SS58=73 • Avg block ≈ 6s
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      const $ = (id) => document.getElementById(id);
+
+      /** Safe GET with timeout */
+      async function getJSON(path, ms = 5000) {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), ms);
+        try {
+          const r = await fetch(path, { signal: ctrl.signal, credentials: 'same-origin' });
+          if (!r.ok) return null;
+          return await r.json();
+        } catch {
+          return null;
+        } finally {
+          clearTimeout(t);
+        }
+      }
+
+      /** Hydrate config from /api/config */
+      async function hydrateConfig() {
+        const cfgWrap = await getJSON('/api/config');
+        const cfg = cfgWrap?.data || cfgWrap || null;
+        if (!cfg) return;
+
+        if (cfg.chainName) $('chainName').textContent = cfg.chainName;
+        if (typeof cfg.ss58Prefix === 'number') $('ss58').textContent = String(cfg.ss58Prefix);
+        if (typeof cfg.avgBlockSeconds === 'number') $('avgBlock').textContent = String(cfg.avgBlockSeconds);
+
+        if (cfg.releaseAt) {
+          const dt = new Date(cfg.releaseAt);
+          const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+          $('releaseAt').dateTime = dt.toISOString();
+          $('releaseAt').textContent = fmt.format(dt);
+        }
+      }
+
+      /** Hydrate live metrics from /api/metrics */
+      async function hydrateMetrics() {
+        const res = await getJSON('/api/metrics');
+        const m = res?.data || res || null;
+        if (!m) return;
+
+        if (typeof m.height === 'number') $('height').textContent = m.height.toLocaleString();
+        else $('height').textContent = '—';
+
+        if (typeof m.peers === 'number') $('peers').textContent = String(m.peers);
+        else $('peers').textContent = '—';
+
+        if (typeof m.ss58Prefix === 'number' && !$('ss58').dataset.locked) {
+          $('ss58').textContent = String(m.ss58Prefix);
+        }
+        if (typeof m.avgBlockSeconds === 'number' && !$('avgBlock').dataset.locked) {
+          $('avgBlock').textContent = String(m.avgBlockSeconds);
+        }
+      }
+
+      // Initial fetch + gentle polling
+      hydrateConfig();
+      hydrateMetrics();
+      setInterval(hydrateMetrics, 10000);
+    })();
+  </script>
+</body>
+</html>
