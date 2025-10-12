@@ -1,8 +1,7 @@
 // public/scripts/api-client.ts
 // Tiny typed client for your serverless endpoints.
-//
-// Build step: transpile to JS (e.g. esbuild/tsup) and include the compiled file
-// with <script type="module" src="/scripts/api-client.js"></script>
+// Build step: transpile to JS (esbuild/tsup) and include the compiled file with:
+// <script type="module" src="/scripts/api-client.js"></script>
 
 import type {
   ApiResponse,
@@ -14,12 +13,13 @@ import type {
   JSONObject,
 } from "../../types/api.js"; // NOTE: .js suffix required with NodeNext
 
-// ---------- Type helpers: pick success branch & its data --------------------
+// ---------- Type helpers ----------------------------------------------------
 type Ok<T> = T extends { ok: true } ? T : never;
 type OkData<T> = T extends { ok: true; data: infer D } ? D : never;
+// If a route already returns ApiResponse<…>, keep it; otherwise wrap at compile-time.
+type AsApiResponse<T> = T extends { ok: boolean } ? T : ApiResponse<T>;
 
-// ----- Internal fetcher ------------------------------------------------------
-
+// ---------- Timeout helper --------------------------------------------------
 const DEFAULT_TIMEOUT_MS = 10_000;
 
 function makeTimeoutSignal(
@@ -40,10 +40,15 @@ function makeTimeoutSignal(
   return { signal: controller.signal, clear };
 }
 
-async function doFetch<T extends ApiResponse<any>>(
+function looksLikeApiResponse(x: unknown): x is ApiResponse<unknown> {
+  return !!x && typeof x === "object" && "ok" in (x as any) && typeof (x as any).ok === "boolean";
+}
+
+// ---------- Core fetcher: always returns ApiResponse shape on 2xx -----------
+async function doFetch<TExpected>(
   path: string,
   init: RequestInit & { timeoutMs?: number } = {}
-): Promise<Ok<T>> {
+): Promise<AsApiResponse<TExpected>> {
   const { timeoutMs, ...rest } = init;
   const { signal, clear } = makeTimeoutSignal(rest.signal, timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
@@ -65,71 +70,66 @@ async function doFetch<T extends ApiResponse<any>>(
     clear();
   }
 
-  // Some APIs may return 204 No Content or empty body
   const text = await res.text();
-  let parsed: unknown = null;
+  let parsed: unknown = undefined;
   if (text) {
     try {
       parsed = JSON.parse(text);
     } catch {
-      parsed = { ok: res.ok, status: res.status, message: text };
+      parsed = { message: text };
     }
   }
 
-  const json = (parsed ?? { ok: res.ok, data: undefined }) as ApiResponse<unknown>;
-
-  // Normalize errors to ApiError-like shapes and throw them
-  if (!res.ok || (json as any).ok === false) {
-    const err =
-      (json as any).ok === false
-        ? (json as any)
-        : {
-            ok: false,
-            status: res.status,
-            code: res.statusText || "HTTP_ERROR",
-            message:
-              (json as any)?.message ||
-              `Request failed (${res.status}${res.statusText ? " " + res.statusText : ""})`,
-          };
+  if (!res.ok) {
+    const msg =
+      (parsed as any)?.error ??
+      (parsed as any)?.message ??
+      `${res.status}${res.statusText ? " " + res.statusText : ""}`;
+    const err = new Error(msg);
+    (err as any).status = res.status;
     throw err;
   }
 
-  // At this point `json.ok` is true
-  return json as Ok<T>;
+  // Normalize success: wrap bare JSON into { ok:true, data: … }
+  const normalized: ApiResponse<unknown> = looksLikeApiResponse(parsed)
+    ? (parsed as ApiResponse<unknown>)
+    : ({ ok: true, data: parsed } as const);
+
+  return normalized as AsApiResponse<TExpected>;
 }
 
-// ----- Public typed helpers --------------------------------------------------
-
-// GET helper
+// ---------- Public helpers: return success .data only -----------------------
 export async function get<Path extends keyof EndpointMap>(
   path: Path,
   opts: Omit<FetchJsonOptions, "method" | "body"> & { timeoutMs?: number } = {}
-): Promise<OkData<GetResponse<Path>>> {
+): Promise<OkData<AsApiResponse<GetResponse<Path>>>> {
   const res = await doFetch<GetResponse<Path>>(path as string, { method: "GET", ...opts });
-  return res.data as OkData<GetResponse<Path>>;
+  return (res as Ok<AsApiResponse<GetResponse<Path>>>).data as OkData<
+    AsApiResponse<GetResponse<Path>>
+  >;
 }
 
-// POST helper
 export async function post<Path extends keyof PostEndpointMap, Body extends JSONObject>(
   path: Path,
   body: Body,
   opts: Omit<FetchJsonOptions<Body>, "method" | "body"> & { timeoutMs?: number } = {}
-): Promise<OkData<PostResponse<Path>>> {
+): Promise<OkData<AsApiResponse<PostResponse<Path>>>> {
   const res = await doFetch<PostResponse<Path>>(path as string, {
     method: "POST",
     body: JSON.stringify(body),
     ...opts,
   });
-  return res.data as OkData<PostResponse<Path>>;
+  return (res as Ok<AsApiResponse<PostResponse<Path>>>).data as OkData<
+    AsApiResponse<PostResponse<Path>>
+  >;
 }
 
-// ----- Convenience: DOM hydrators (optional) --------------------------------
-
-/** Fill small config bits in the DOM (rpc url, network name, releaseAt). */
+// ---------- DOM hydrators (resilient to optional fields) --------------------
 export async function hydrateConfig() {
   const cfg = await get("/api/config");
+
   const rpcEl = document.getElementById("rpc-url");
-  if (rpcEl) rpcEl.textContent = cfg.rpcWS;
+  if (rpcEl && (cfg as any)?.rpcWS) (rpcEl as HTMLElement).textContent = (cfg as any).rpcWS;
 
   const badge = document.getElementById("live-badge");
   if (badge) badge.textContent = "Preview";
@@ -137,27 +137,30 @@ export async function hydrateConfig() {
   const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
   ["preview-release-time", "preview-release-time-2"].forEach((id) => {
     const t = document.getElementById(id) as HTMLTimeElement | null;
-    if (t) {
-      t.dateTime = cfg.releaseAt;
-      t.textContent = fmt.format(new Date(cfg.releaseAt));
+    const iso = (cfg as any)?.releaseAt;
+    if (t && typeof iso === "string") {
+      t.dateTime = iso;
+      t.textContent = fmt.format(new Date(iso));
     }
   });
+
   return cfg;
 }
 
-/** Fill live metrics in the DOM (height, peers, counters). */
 export async function hydrateMetrics() {
   const m = await get("/api/metrics");
 
   const height = document.getElementById("height");
-  if (height && typeof m.height === "number") height.textContent = m.height.toLocaleString();
+  if (height && typeof (m as any)?.height === "number")
+    height.textContent = (m as any).height.toLocaleString();
 
   const peers = document.getElementById("peers");
-  if (peers && typeof m.peers === "number") peers.textContent = String(m.peers);
+  if (peers && typeof (m as any)?.peers === "number")
+    peers.textContent = String((m as any).peers);
 
   const map: Record<string, number | undefined> = {
-    waitlist: m.waitlistCount,
-    countries: m.countryCount,
+    waitlist: (m as any)?.waitlistCount,
+    countries: (m as any)?.countryCount,
   };
 
   document.querySelectorAll<HTMLElement>("[data-countup-key]").forEach((el) => {
@@ -185,8 +188,7 @@ function animateCountup(el: HTMLElement, end: number, dur = 900) {
   requestAnimationFrame(step);
 }
 
-// ----- Optional: expose on window for quick prototyping ---------------------
-
+// ---------- Optional: expose on window --------------------------------------
 declare global {
   interface Window {
     Api?: {
