@@ -1,6 +1,7 @@
 // api/config.ts
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-// NodeNext: use relative path + .js extension for local TS modules
+
+// NodeNext: keep .js on local type-only imports
 import type {
   GetConfigResponse,
   NetworkConfig,
@@ -9,33 +10,83 @@ import type {
   HttpUrl,
 } from '../types/api.js';
 
-export default function handler(_req: VercelRequest, res: VercelResponse) {
-  // Optional: override launch time from env
-  const RELEASE_AT = process.env.Q_RELEASE_AT ?? '2025-11-30T17:00:00Z';
+// ─────────────────────────────────────────────────────────────────────────────
+// CORS (tiny, env-driven)
+function setCors(req: VercelRequest, res: VercelResponse) {
+  const allow =
+    process.env.ALLOWED_ORIGINS ||
+    process.env.CORS_ALLOWED_ORIGINS ||
+    '*';
+
+  const origin = (req.headers.origin as string) || '';
+  const list = allow.split(',').map(s => s.trim()).filter(Boolean);
+
+  const allowedOrigin = list.includes('*')
+    ? (origin || '*')
+    : (list.includes(origin) ? origin : (list[0] || '*'));
+
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400'); // cache preflight 24h
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Handler
+export default function handler(req: VercelRequest, res: VercelResponse) {
+  setCors(req, res);
+
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method === 'HEAD') {
+    res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=60');
+    return res.status(204).end();
+  }
+  if (req.method !== 'GET') {
+    return res.status(405).json({ ok: false, error: 'method_not_allowed' });
+  }
+
+  // Release time (safe parse with fallback)
+  const FALLBACK_ISO = '2025-11-30T17:00:00Z';
+  const envRelease = process.env.Q_RELEASE_AT ?? FALLBACK_ISO;
+  const parsed = new Date(envRelease);
+  const releaseIso: ISODateString = (
+    isNaN(parsed.getTime()) ? new Date(FALLBACK_ISO) : parsed
+  ).toISOString() as ISODateString;
+
+  // RPC is optional (no RPC yet is fine). Accept FAUCET_RPC_URL or RPC_WS.
+  const rpcEnv = (process.env.FAUCET_RPC_URL || process.env.RPC_WS || '').trim();
+  const rpcWS = (rpcEnv && /^wss?:\/\//i.test(rpcEnv) ? rpcEnv : '') as WsUrl;
+
+  // Optional absolute links if PUBLIC_BASE_URL is set
+  const base = (process.env.PUBLIC_BASE_URL || '').replace(/\/$/, '');
+  const abs = (p: string) => (base ? `${base}${p}` : p);
 
   const config: NetworkConfig = {
     chainName: 'Devnet-0',
     tokenSymbol: 'QTR',
     tokenDecimals: 12,
     ss58Prefix: 73,
-    rpcWS: 'wss://rpc.devnet-0.quantara.xyz' as WsUrl,
-    releaseAt: new Date(RELEASE_AT).toISOString() as ISODateString,
+    rpcWS, // '' when not configured; UI should handle gracefully
+    releaseAt: releaseIso,
     explorer: {
-      homepage: '/explorer/' as HttpUrl,            // if proxied/hosted under your domain
-      account: '/explorer/account/{address}',
-      tx: '/explorer/tx/{hash}',
+      // If your HttpUrl type requires absolute URLs, set PUBLIC_BASE_URL.
+      homepage: abs('/explorer/') as HttpUrl,
+      account: abs('/explorer/account/{address}'),
+      tx:      abs('/explorer/tx/{hash}'),
     },
     links: {
-      wallet: '/wallet/',
-      faucet: '/faucet/',
-      status: '/status/',
-      explorer: '/explorer/',
+      wallet:   abs('/wallet/'),
+      faucet:   abs('/faucet/'),
+      status:   abs('/status/'),
+      explorer: abs('/explorer/'),
     },
   };
 
   const payload: GetConfigResponse = { ok: true, data: config };
 
-  // Cache a bit; this rarely changes
-  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
-  res.status(200).json(payload);
+  res.setHeader('Content-Type', 'application/json; charset=utf-8');
+  // Cache for 5 minutes, allow SWR for 60s
+  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300, stale-while-revalidate=60');
+  return res.status(200).json(payload);
 }

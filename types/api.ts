@@ -16,20 +16,26 @@ export type WsUrl = Brand<string, "ws-url">;            // e.g. wss://rpc.devnet
 export type HttpUrl = Brand<string, "http-url">;
 
 /* ------------------------------------------------------------------ *
- * API envelope
+ * API envelopes (match current handlers)
  * ------------------------------------------------------------------ */
-
-export interface ApiError {
-  ok: false;
-  status: number;            // HTTP status sent by the API
-  code: string;              // machine-readable code (e.g., "BAD_REQUEST", "RATE_LIMITED")
-  message: string;           // safe, user-facing message
-  details?: JSONObject;      // optional extra context
-}
 
 export interface ApiSuccess<T> {
   ok: true;
   data: T;
+  /** some handlers (e.g., /api/waitlist) also return meta */
+  meta?: JSONObject;
+}
+
+export interface ApiError {
+  ok: false;
+  /** some handlers send `code`, others `error`, sometimes both */
+  code?: string;
+  error?: string;
+  /** optional safe message for users */
+  message?: string;
+  /** optional HTTP status mirrored by client (not always present server-side) */
+  status?: number;
+  details?: JSONObject;
 }
 
 export type ApiResponse<T> = ApiSuccess<T> | ApiError;
@@ -42,7 +48,7 @@ export const isApiSuccess = <T>(r: ApiResponse<T>): r is ApiSuccess<T> => r.ok =
  * ------------------------------------------------------------------ */
 
 export interface ExplorerLinks {
-  homepage: HttpUrl;         // e.g. "https://explorer.quantara.xyz/"
+  homepage: HttpUrl;         // e.g. "https://explorer.quantara.xyz/" or "/explorer/"
   account?: string;          // route pattern, e.g. "/account/{address}"
   tx?: string;               // route pattern, e.g. "/tx/{hash}"
 }
@@ -72,44 +78,47 @@ export type GetConfigResponse = ApiResponse<NetworkConfig>;
  * ------------------------------------------------------------------ */
 
 export interface Metrics {
-  waitlistCount: number;     // total signups (verified or all—your choice, document it)
+  waitlistCount: number;     // total signups
   countryCount: number;
   avgBlockSeconds: number;   // e.g. 6
   ss58Prefix: number;        // 73
-  height?: number;           // optional if you pipe live node metrics
-  peers?: number;            // optional
+  height?: number;           // optional live node metric
+  peers?: number;            // optional live node metric
   updatedAt: ISODateString;
 }
 
 export type GetMetricsResponse = ApiResponse<Metrics>;
 
 /* ------------------------------------------------------------------ *
- * /api/leaderboard  → Referral leaderboard data
+ * /api/leaderboard  → Referral leaderboard data (matches current handler)
  * ------------------------------------------------------------------ */
 
-export interface LeaderboardEntry {
-  rank: number;
-  handle: string;            // display name (e.g., "0xNova")
-  points: number;            // points for the current window
-  code?: string;             // ref code (never expose email)
+export interface LeaderboardRow {
+  referral_code: string;     // user's referral code
+  name: string;              // masked email (e.g., "abc***")
+  signups: number;           // SIGNUP events in window
+  verified: number;          // VERIFIED events in window
+  points: number;            // weighted points
 }
 
-export interface LeaderboardWindow {
-  label: string;             // "weekly", "all-time", etc.
-  since?: ISODateString;
-  until?: ISODateString;
+export interface LeaderboardWeights {
+  signup: number;
+  verified: number;
 }
 
-export interface LeaderboardPayload {
+/** current handler returns a simple string 'week' | 'month' | 'all' */
+export type LeaderboardWindow = "week" | "month" | "all";
+
+export interface LeaderboardResponseBody {
   window: LeaderboardWindow;
-  entries: LeaderboardEntry[];
-  updatedAt: ISODateString;
+  weights: LeaderboardWeights;
+  data: LeaderboardRow[];
 }
 
-export type GetLeaderboardResponse = ApiResponse<LeaderboardPayload>;
+export type GetLeaderboardResponse = ApiResponse<LeaderboardResponseBody>;
 
 /* ------------------------------------------------------------------ *
- * /api/waitlist  → New signup
+ * /api/waitlist  → New signup (matches current handler)
  * ------------------------------------------------------------------ */
 
 export type Role =
@@ -126,7 +135,7 @@ export type Experience = "New" | "Intermediate" | "Advanced";
 export interface WaitlistRequest {
   email: string;
   role: Role;
-  experience: Experience;
+  experience?: Experience;
   discord?: string;
   github?: string;
   country?: string;
@@ -138,10 +147,13 @@ export interface WaitlistRequest {
   utm_content?: string;
   utm_term?: string;
 
-  // Cloudflare Turnstile token name is standardized:
-  // https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
-  "cf-turnstile-response": string;
-  consent_marketing: "yes";  // required checkbox in your UI
+  // Accept several field names; UI should use "cf-turnstile-response"
+  "cf-turnstile-response"?: string;
+  cf_turnstile_response?: string;
+  turnstileToken?: string;
+
+  /** optional, if your UI includes consent */
+  consent_marketing?: "yes";
 }
 
 export interface WaitlistResult {
@@ -150,41 +162,40 @@ export interface WaitlistResult {
   emailQueued: boolean;      // whether verification email queued
 }
 
-export type PostWaitlistResponse = ApiResponse<WaitlistResult>;
-
-/* ------------------------------------------------------------------ *
- * /api/verify-email → clicked from email
- * ------------------------------------------------------------------ */
-
-export interface VerifyEmailRequest {
-  token: string;             // single-use verification token
+/** /api/waitlist also returns { meta: { verifyToken } } */
+export interface WaitlistMeta {
+  verifyToken?: string;
 }
 
-export interface VerifyEmailResult {
+export type PostWaitlistResponse = ApiSuccess<WaitlistResult> | ApiError & { meta?: WaitlistMeta };
+
+/* ------------------------------------------------------------------ *
+ * /api/verify-email → clicked from email (JSON mode)
+ * ------------------------------------------------------------------ */
+
+export interface VerifyEmailJsonResult {
   verified: boolean;
-  code?: string;             // the user’s referral code (for redirect building)
+  awarded: boolean;          // whether a VERIFIED referral was awarded
+  redirect: string;          // URL we would 302 to in non-JSON mode
 }
 
-export type PostVerifyEmailResponse = ApiResponse<VerifyEmailResult>;
+export type PostVerifyEmailResponse = ApiResponse<VerifyEmailJsonResult>;
 
 /* ------------------------------------------------------------------ *
- * /api/verify-turnstile → optional server-side token check
+ * /api/verify-turnstile → server-side token check (matches current handler)
+ * NOTE: This endpoint currently returns a *raw* shape, not wrapped in ApiResponse.
  * ------------------------------------------------------------------ */
 
-export interface VerifyTurnstileRequest {
-  token: string;             // client Turnstile response
+export interface VerifyTurnstileRawResult {
+  success: boolean;
+  score?: number;
 }
 
-export interface VerifyTurnstileResult {
-  valid: boolean;
-  hostname?: string;
-  challenge_ts?: ISODateString;
-}
-
-export type PostVerifyTurnstileResponse = ApiResponse<VerifyTurnstileResult>;
+export type PostVerifyTurnstileResponse = VerifyTurnstileRawResult; // raw passthrough
 
 /* ------------------------------------------------------------------ *
- * /api/faucet-claim → for CI/dev tooling (if exposed)
+ * /api/faucet-claim → if/when exposed
+ * (kept generic; adjust when you implement the handler)
  * ------------------------------------------------------------------ */
 
 export interface FaucetClaimRequest {
@@ -201,17 +212,17 @@ export interface FaucetClaimResult {
 export type PostFaucetClaimResponse = ApiResponse<FaucetClaimResult>;
 
 /* ------------------------------------------------------------------ *
- * /api/health → simple ping
+ * /api/health → simple DB ping (matches current handler)
  * ------------------------------------------------------------------ */
 
-export interface Health {
-  ok: true;
-  uptime: number;            // seconds
-  region?: string;           // Vercel region
-  timestamp: ISODateString;
+export interface HealthPayload {
+  ok: boolean;               // true if DB ping worked
+  db: "up" | "down";
+  time?: string | null;      // server timestamp from DB
+  env: string;               // NODE_ENV echo
 }
 
-export type GetHealthResponse = ApiResponse<Health>;
+export type GetHealthResponse = HealthPayload; // this handler is not envelope-wrapped
 
 /* ------------------------------------------------------------------ *
  * Small helper types for fetchers on the client
@@ -226,6 +237,7 @@ export interface FetchJsonOptions<TBody extends JSONObject | undefined = undefin
   signal?: AbortSignal;
 }
 
+/** GET endpoints map (types reflect the *response* you get back) */
 export type EndpointMap = {
   "/api/config": GetConfigResponse;
   "/api/metrics": GetMetricsResponse;
@@ -233,6 +245,7 @@ export type EndpointMap = {
   "/api/health": GetHealthResponse;
 };
 
+/** POST endpoints map */
 export type PostEndpointMap = {
   "/api/waitlist": PostWaitlistResponse;
   "/api/verify-email": PostVerifyEmailResponse;
@@ -240,6 +253,6 @@ export type PostEndpointMap = {
   "/api/faucet-claim": PostFaucetClaimResponse;
 };
 
-// Utility to narrow response type from a known path
+/** Utility to narrow response type from a known path */
 export type GetResponse<Path extends keyof EndpointMap> = EndpointMap[Path];
 export type PostResponse<Path extends keyof PostEndpointMap> = PostEndpointMap[Path];
