@@ -1,6 +1,5 @@
 // public/scripts/api-client.ts
 // Tiny typed client for your serverless endpoints.
-//
 // Build step: transpile to JS (e.g. esbuild/tsup) and include the compiled file
 // with <script type="module" src="/scripts/api-client.js"></script>
 
@@ -15,17 +14,17 @@ import type {
 } from "../../types/api.js"; // NOTE: .js suffix required with NodeNext
 
 // ---------- Type helpers: pick success branch & its data --------------------
+type ApiSuccess<T> = Extract<ApiResponse<T>, { ok: true }>;
 type Ok<T> = T extends { ok: true } ? T : never;
 type OkData<T> = T extends { ok: true; data: infer D } ? D : never;
 
-// ---------- Constants --------------------------------------------------------
-const DEFAULT_TIMEOUT_MS = 10_000;
-const nfInt = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
-const prefersReducedMotion =
-  typeof matchMedia === "function" &&
-  matchMedia("(prefers-reduced-motion: reduce)").matches === true;
+// If a route type is already ApiResponse<…>, keep it; otherwise wrap as ApiResponse<…>
+type AsApiResponse<T> = T extends { ok: boolean } ? T : ApiResponse<T>;
 
-// ---------- Internals: fetch with timeout & sane headers ---------------------
+// ----- Internal fetcher ------------------------------------------------------
+
+const DEFAULT_TIMEOUT_MS = 10_000;
+
 function makeTimeoutSignal(
   upstream: AbortSignal | null | undefined,
   ms: number = DEFAULT_TIMEOUT_MS
@@ -40,28 +39,37 @@ function makeTimeoutSignal(
     if (upstream.aborted) controller.abort();
     else upstream.addEventListener("abort", () => controller.abort(), { once: true });
   }
+
   return { signal: controller.signal, clear };
 }
 
-async function doFetch<T extends ApiResponse<any>>(
+// Detects if a value already looks like an ApiResponse
+function looksLikeApiResponse(x: any): x is ApiResponse<unknown> {
+  return x && typeof x === "object" && "ok" in x && typeof x.ok === "boolean";
+}
+
+/**
+ * Core fetcher:
+ * - always returns an ApiResponse-shaped object (success branch on 2xx, error throws otherwise)
+ * - wraps bare JSON bodies into { ok:true, data:… }
+ */
+async function doFetch<TExpected>(
   path: string,
   init: RequestInit & { timeoutMs?: number } = {}
-): Promise<Ok<T>> {
+): Promise<AsApiResponse<TExpected>> {
   const { timeoutMs, ...rest } = init;
   const { signal, clear } = makeTimeoutSignal(rest.signal, timeoutMs ?? DEFAULT_TIMEOUT_MS);
 
   const headers = new Headers(rest.headers || {});
-  // Default to JSON accept; set Content-Type when body is string
-  if (!headers.has("Accept")) headers.set("Accept", "application/json");
   if (rest.body && typeof rest.body === "string" && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
+  if (!headers.has("Accept")) headers.set("Accept", "application/json");
 
   let res: Response;
   try {
     res = await fetch(path, {
       credentials: "same-origin",
-      cache: rest.cache ?? "no-store",
       ...rest,
       headers,
       signal,
@@ -70,195 +78,132 @@ async function doFetch<T extends ApiResponse<any>>(
     clear();
   }
 
-  // Some APIs may return 204 No Content or an empty body — normalize that
+  // Read body safely (some endpoints may return empty)
   const text = await res.text();
-  let parsed: unknown = null;
+  let parsed: unknown = undefined;
   if (text) {
     try {
       parsed = JSON.parse(text);
     } catch {
-      // Not JSON: surface as a normalized error/echo body
-      parsed = { ok: res.ok, status: res.status, message: text };
+      parsed = { message: text };
     }
   }
 
-  // Accept both wrapped { ok, data } and raw payloads; we normalize below
-  const json = (parsed ?? { ok: res.ok, data: undefined }) as ApiResponse<unknown>;
-
-  if (!res.ok || (json as any).ok === false) {
-    const err =
-      (json as any).ok === false
-        ? (json as any)
-        : {
-            ok: false,
-            status: res.status,
-            code: res.statusText || "HTTP_ERROR",
-            message:
-              (json as any)?.message ||
-              `Request failed (${res.status}${res.statusText ? " " + res.statusText : ""})`,
-          };
+  // Non-2xx => throw normalized Error
+  if (!res.ok) {
+    const msg =
+      (parsed as any)?.error ??
+      (parsed as any)?.message ??
+      `${res.status} ${res.statusText || "Request failed"}`;
+    const err = new Error(msg);
+    (err as any).status = res.status;
     throw err;
   }
-  return json as Ok<T>;
+
+  // 2xx: ensure ApiResponse shape
+  const json = parsed;
+  const apiJson: ApiResponse<unknown> = looksLikeApiResponse(json)
+    ? (json as ApiResponse<unknown>)
+    : ({ ok: true, data: json } as ApiSuccess<unknown>);
+
+  return apiJson as AsApiResponse<TExpected>;
 }
 
-// ---------- Public typed helpers --------------------------------------------
+// ----- Public typed helpers --------------------------------------------------
 
-// GET helper
+// GET helper — returns success .data only (after normalization)
 export async function get<Path extends keyof EndpointMap>(
   path: Path,
   opts: Omit<FetchJsonOptions, "method" | "body"> & { timeoutMs?: number } = {}
-): Promise<OkData<GetResponse<Path>>> {
+): Promise<OkData<AsApiResponse<GetResponse<Path>>>> {
   const res = await doFetch<GetResponse<Path>>(path as string, { method: "GET", ...opts });
-  return (res as any).data as OkData<GetResponse<Path>>;
+  return (res as Ok<AsApiResponse<GetResponse<Path>>>).data as OkData<
+    AsApiResponse<GetResponse<Path>>
+  >;
 }
 
-// POST helper
+// POST helper — returns success .data only (after normalization)
 export async function post<Path extends keyof PostEndpointMap, Body extends JSONObject>(
   path: Path,
   body: Body,
   opts: Omit<FetchJsonOptions<Body>, "method" | "body"> & { timeoutMs?: number } = {}
-): Promise<OkData<PostResponse<Path>>> {
+): Promise<OkData<AsApiResponse<PostResponse<Path>>>> {
   const res = await doFetch<PostResponse<Path>>(path as string, {
     method: "POST",
     body: JSON.stringify(body),
     ...opts,
   });
-  return (res as any).data as OkData<PostResponse<Path>>;
+  return (res as Ok<AsApiResponse<PostResponse<Path>>>).data as OkData<
+    AsApiResponse<PostResponse<Path>>
+  >;
 }
 
-// ---------- DOM helpers (optional) ------------------------------------------
-function byId<T extends HTMLElement = HTMLElement>(id: string): T | null {
-  return (typeof document !== "undefined" ? document.getElementById(id) : null) as T | null;
-}
-function setText(el: HTMLElement | null, v: string | number | null | undefined) {
-  if (!el) return;
-  el.textContent =
-    typeof v === "number" ? nfInt.format(v) : v == null || v === "" ? "—" : String(v);
-}
-function setTime(el: HTMLTimeElement | null, iso: string | null | undefined) {
-  if (!el || !iso) return;
-  const dt = new Date(iso);
-  if (Number.isNaN(+dt)) return;
-  el.dateTime = dt.toISOString();
-  el.textContent = new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(dt);
-}
+// ----- Convenience: DOM hydrators (optional) --------------------------------
 
-// ---------- Hydrators --------------------------------------------------------
-
-/**
- * Fill small config bits in the DOM (rpc url, network name, releaseAt, SS58/decimals)
- * and toggle Live/Preview UI.
- */
+/** Fill small config bits in the DOM (rpc url, network name, releaseAt). */
 export async function hydrateConfig() {
   const cfg = await get("/api/config");
+  const rpcEl = document.getElementById("rpc-url");
+  if (rpcEl && (cfg as any)?.rpcWS) (rpcEl as HTMLElement).textContent = (cfg as any).rpcWS;
 
-  // RPC URL (code block near quick actions)
-  const rpcText = byId("rpc-url");
-  if (rpcText && (cfg as any).rpcWS) rpcText.textContent = String((cfg as any).rpcWS);
+  const badge = document.getElementById("live-badge");
+  if (badge) badge.textContent = "Preview";
 
-  // Small tokens near hero badge row
-  setText(byId("ss58-prefix"), (cfg as any).ss58Prefix);
-  setText(byId("token-symbol"), (cfg as any).tokenSymbol);
-  setText(byId("token-decimals"), (cfg as any).tokenDecimals);
-
-  // Also mirror into Wallet/Faucet teasers if present
-  setText(byId("wallet-ss58"), (cfg as any).ss58Prefix);
-  setText(byId("wallet-token"), (cfg as any).tokenSymbol);
-  setText(byId("wallet-decimals"), (cfg as any).tokenDecimals);
-  setText(byId("faucet-token"), (cfg as any).tokenSymbol);
-
-  // Release gating — if releaseAt is present, show on both preview cards
-  const relIso = (cfg as any).releaseAt as string | undefined;
-  if (relIso) {
-    setTime(byId<HTMLTimeElement>("preview-release-time"), relIso);
-    setTime(byId<HTMLTimeElement>("preview-release-time-2"), relIso);
-
-    const now = Date.now();
-    const t = Date.parse(relIso);
-    const live = Number.isFinite(t) && now >= t;
-
-    // Flip global "Preview"/"Live" badge in the network strip if present
-    const liveBadge = byId("live-badge");
-    if (liveBadge) liveBadge.textContent = live ? "Live" : "Preview";
-
-    // Also toggle a document-level flag other code may use
-    if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-live", live ? "1" : "0");
+  const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" });
+  ["preview-release-time", "preview-release-time-2"].forEach((id) => {
+    const t = document.getElementById(id) as HTMLTimeElement | null;
+    if (t && (cfg as any)?.releaseAt) {
+      t.dateTime = (cfg as any).releaseAt;
+      t.textContent = fmt.format(new Date((cfg as any).releaseAt));
     }
-  }
-
+  });
   return cfg;
 }
 
-/** Fill live metrics in the DOM (height, peers, basic counters). */
+/** Fill live metrics in the DOM (height, peers, counters). */
 export async function hydrateMetrics() {
   const m = await get("/api/metrics");
 
-  // Height / peers counters
-  setText(byId("height"), (m as any).height);
-  setText(byId("peers"), (m as any).peers);
+  const height = document.getElementById("height");
+  if (height && typeof (m as any).height === "number")
+    height.textContent = (m as any).height.toLocaleString();
 
-  // Metric tiles (IDs in the index: metric-waitlist, metric-countries, metric-avgblock, metric-ss58)
+  const peers = document.getElementById("peers");
+  if (peers && typeof (m as any).peers === "number")
+    peers.textContent = String((m as any).peers);
+
   const map: Record<string, number | undefined> = {
-    "metric-waitlist": (m as any).waitlistCount,
-    "metric-countries": (m as any).countryCount,
-    "metric-avgblock": (m as any).avgBlockSeconds,
-    "metric-ss58": (m as any).ss58Prefix,
+    waitlist: (m as any).waitlistCount,
+    countries: (m as any).countryCount,
   };
 
-  Object.entries(map).forEach(([id, val]) => {
-    const el = byId(id);
-    if (!el) return;
-    if (typeof val === "number") {
-      animateCountup(el, val);
-    } else {
-      el.textContent = "—";
+  document.querySelectorAll<HTMLElement>("[data-countup-key]").forEach((el) => {
+    const key = el.getAttribute("data-countup-key")!;
+    const end = map[key];
+    if (typeof end !== "number") {
+      el.closest("[data-hide-if-empty]")?.classList.add("hidden");
+      return;
     }
-  });
-
-  // Any [data-countup-key] elements (e.g., “my-points”) — hydrate when available
-  const counters = document.querySelectorAll<HTMLElement>("[data-countup-key]");
-  counters.forEach((el) => {
-    const key = el.getAttribute("data-countup-key") || "";
-    let end: number | undefined;
-    switch (key) {
-      case "points":
-        // If you later wire real points here, animate them
-        end = Number(localStorage.getItem("q_points") || 0);
-        break;
-      default:
-        end = undefined;
-    }
-    if (typeof end === "number" && Number.isFinite(end)) animateCountup(el, end);
+    animateCountup(el, end);
   });
 
   return m;
 }
 
-// ---------- Countup animation (respects reduced motion) ----------------------
 function animateCountup(el: HTMLElement, end: number, dur = 900) {
-  if (prefersReducedMotion) {
-    el.textContent = nfInt.format(end);
-    return;
-  }
   const start = performance.now();
-  const startVal =
-    Number(String(el.textContent || "").replace(/[^\d.-]/g, "")) || 0;
-
-  function step(t: number) {
+  const startVal = 0;
+  const step = (t: number) => {
     const k = Math.min(1, (t - start) / dur);
-    const cur = Math.round(startVal + (end - startVal) * k);
-    el.textContent = nfInt.format(cur);
+    const cur = Math.floor(startVal + (end - startVal) * k);
+    el.textContent = cur.toLocaleString();
     if (k < 1) requestAnimationFrame(step);
-  }
+  };
   requestAnimationFrame(step);
 }
 
-// ---------- Optional: expose on window for quick prototyping -----------------
+// ----- Optional: expose on window for quick prototyping ---------------------
+
 declare global {
   interface Window {
     Api?: {

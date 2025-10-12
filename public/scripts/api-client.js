@@ -12,6 +12,9 @@ function makeTimeoutSignal(upstream, ms = DEFAULT_TIMEOUT_MS) {
   }
   return { signal: controller.signal, clear };
 }
+function looksLikeApiResponse(x) {
+  return x && typeof x === "object" && "ok" in x && typeof x.ok === "boolean";
+}
 async function doFetch(path, init = {}) {
   const { timeoutMs, ...rest } = init;
   const { signal, clear } = makeTimeoutSignal(rest.signal, timeoutMs ?? DEFAULT_TIMEOUT_MS);
@@ -32,25 +35,23 @@ async function doFetch(path, init = {}) {
     clear();
   }
   const text = await res.text();
-  let parsed = null;
+  let parsed = void 0;
   if (text) {
     try {
       parsed = JSON.parse(text);
     } catch {
-      parsed = { ok: res.ok, status: res.status, message: text };
+      parsed = { message: text };
     }
   }
-  const json = parsed ?? { ok: res.ok, data: void 0 };
-  if (!res.ok || json.ok === false) {
-    const err = json.ok === false ? json : {
-      ok: false,
-      status: res.status,
-      code: res.statusText || "HTTP_ERROR",
-      message: json?.message || `Request failed (${res.status}${res.statusText ? " " + res.statusText : ""})`
-    };
+  if (!res.ok) {
+    const msg = parsed?.error ?? parsed?.message ?? `${res.status} ${res.statusText || "Request failed"}`;
+    const err = new Error(msg);
+    err.status = res.status;
     throw err;
   }
-  return json;
+  const json = parsed;
+  const apiJson = looksLikeApiResponse(json) ? json : { ok: true, data: json };
+  return apiJson;
 }
 async function get(path, opts = {}) {
   const res = await doFetch(path, { method: "GET", ...opts });
@@ -67,13 +68,13 @@ async function post(path, body, opts = {}) {
 async function hydrateConfig() {
   const cfg = await get("/api/config");
   const rpcEl = document.getElementById("rpc-url");
-  if (rpcEl) rpcEl.textContent = cfg.rpcWS;
+  if (rpcEl && cfg?.rpcWS) rpcEl.textContent = cfg.rpcWS;
   const badge = document.getElementById("live-badge");
   if (badge) badge.textContent = "Preview";
   const fmt = new Intl.DateTimeFormat(void 0, { dateStyle: "medium", timeStyle: "short" });
   ["preview-release-time", "preview-release-time-2"].forEach((id) => {
     const t = document.getElementById(id);
-    if (t) {
+    if (t && cfg?.releaseAt) {
       t.dateTime = cfg.releaseAt;
       t.textContent = fmt.format(new Date(cfg.releaseAt));
     }
@@ -83,9 +84,11 @@ async function hydrateConfig() {
 async function hydrateMetrics() {
   const m = await get("/api/metrics");
   const height = document.getElementById("height");
-  if (height && typeof m.height === "number") height.textContent = m.height.toLocaleString();
+  if (height && typeof m.height === "number")
+    height.textContent = m.height.toLocaleString();
   const peers = document.getElementById("peers");
-  if (peers && typeof m.peers === "number") peers.textContent = String(m.peers);
+  if (peers && typeof m.peers === "number")
+    peers.textContent = String(m.peers);
   const map = {
     waitlist: m.waitlistCount,
     countries: m.countryCount
