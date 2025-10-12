@@ -5,111 +5,220 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <title>Quantara Explorer — Devnet-0 (Coming Soon)</title>
-  <meta name="description" content="Quantara Devnet-0 block explorer placeholder with live network snapshot and links to wallet, faucet, and status." />
-  <meta name="theme-color" content="#0a0b0d" />
-  <meta name="color-scheme" content="dark" />
-  <meta name="robots" content="noindex" />
+  <meta name="description" content="Quantara Devnet-0 block explorer placeholder with live network snapshot and links to wallet, faucet, and status.">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <meta name="robots" content="noindex">
 
-  <!-- Favicon kept inline to avoid CSP/image host changes -->
   <link rel="icon" href="data:,">
-
-  <!-- Tailwind CDN (allowed in your CSP) -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com" defer></script>
 
   <style>
-    /* small, CSP-safe skeleton shimmer */
-    .skeleton{
-      position:relative; overflow:hidden; background-color:rgba(255,255,255,.06)
+    /* === Visual theme === */
+    :root { --q-accent: 234,179,8; /* tailwind yellow-500 */ }
+
+    /* Animated star grid background (pure CSS, CSP-safe) */
+    body {
+      background:
+        radial-gradient(1200px 600px at 20% -10%, rgba(255,255,255,.06), transparent 60%),
+        radial-gradient(900px 500px at 90% 10%, rgba(234,179,8,.07), transparent 60%),
+        #000;
+      position: relative;
+      overflow-x: hidden;
     }
-    .skeleton::after{
-      content:""; position:absolute; inset:0;
-      transform:translateX(-100%);
-      background:linear-gradient(90deg, transparent, rgba(255,255,255,.08), transparent);
-      animation:shimmer 1.2s linear infinite;
+    .bg-grid::before {
+      content: "";
+      position: fixed; inset: 0; pointer-events: none; opacity: .15;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.08) 1px, transparent 1px);
+      background-size: 40px 40px;
+      mask-image: linear-gradient(to bottom, transparent, black 20%, black 80%, transparent);
     }
-    @media (prefers-reduced-motion: reduce){
-      .skeleton::after{ animation:none }
+    .nebula::after {
+      content:""; position:absolute; inset:-20% -10% auto auto; width:60vw; height:60vh;
+      background: radial-gradient(closest-side, rgba(234,179,8,.15), rgba(234,179,8,0));
+      filter: blur(40px); opacity:.5; transform: translateZ(0);
     }
-    @keyframes shimmer{ 100% { transform:translateX(100%) } }
+
+    /* Subtle card glow */
+    .card {
+      background: linear-gradient(180deg, rgba(24,24,27,.65), rgba(9,9,11,.65));
+      border: 1px solid rgba(63,63,70,.7);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset, 0 10px 30px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+    }
+    .card:hover { border-color: rgba(161,161,170,.6); }
+
+    /* Status beam (live/preview pill with pulse) */
+    .beam {
+      position: relative;
+      border: 1px solid #064e3b;
+      background: linear-gradient(90deg, rgba(16,185,129,.12), rgba(5,150,105,.1));
+    }
+    .beam::before {
+      content:""; position:absolute; left:8px; top:50%; width:8px; height:8px; border-radius:9999px;
+      transform: translateY(-50%); background:#10b981; box-shadow: 0 0 12px #10b981;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    .beam.preview {
+      border-color:#3f3f46; background: linear-gradient(90deg, rgba(161,161,170,.12), rgba(82,82,91,.1));
+    }
+    .beam.preview::before { background:#a1a1aa; box-shadow: 0 0 8px #a1a1aa; animation:none; }
+
+    @keyframes pulse {
+      0%,100% { transform: translateY(-50%) scale(1); opacity: 1; }
+      50%     { transform: translateY(-50%) scale(1.35); opacity: .7; }
+    }
+
+    /* Skeleton shimmer */
+    .skeleton{position:relative;overflow:hidden;background-color:rgba(255,255,255,.06)}
+    .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+      background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+      animation:shimmer 1.2s linear infinite}
+    @media (prefers-reduced-motion: reduce){.skeleton::after{animation:none}}
+    @keyframes shimmer{100%{transform:translateX(100%)}}
+
+    /* Focus ring */
+    :focus-visible{outline:2px solid rgba(var(--q-accent),.7); outline-offset:2px; border-radius:8px}
   </style>
 </head>
-<body class="min-h-screen bg-black text-white selection:bg-yellow-500/30">
-  <main class="max-w-5xl mx-auto px-6 py-12">
+<body class="min-h-screen text-white selection:bg-yellow-500/30 bg-grid">
+  <div class="nebula"></div>
+  <noscript>
+    <div class="max-w-5xl mx-auto px-6 pt-4">
+      <div class="rounded-lg border border-yellow-700 bg-yellow-500/10 p-3 text-sm">
+        JavaScript is required to fetch network status and enable live explorer features.
+      </div>
+    </div>
+  </noscript>
+
+  <main class="relative max-w-5xl mx-auto px-6 py-12">
     <header class="flex items-center justify-between gap-4">
-      <a href="/" class="text-sm opacity-70 hover:opacity-100 transition">&larr; Back to Waitlist</a>
+      <a href="/" class="text-sm opacity-70 hover:opacity-100 transition" aria-label="Back to Waitlist">&larr; Back to Waitlist</a>
       <nav class="flex items-center gap-2 text-sm">
-        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/wallet/">Wallet</a>
-        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/faucet/">Faucet</a>
-        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/status/">Status</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900/70 transition card" href="/wallet/">Wallet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900/70 transition card" href="/faucet/">Faucet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900/70 transition card" href="/status/">Status</a>
       </nav>
     </header>
 
-    <h1 class="mt-6 text-3xl md:text-4xl font-semibold tracking-tight">Quantara Explorer</h1>
-    <p class="mt-2 text-zinc-400">
+    <div class="mt-8 flex flex-wrap items-center gap-3">
+      <h1 class="text-3xl md:text-4xl font-semibold tracking-tight">Quantara Explorer</h1>
+      <span id="badge" class="beam preview text-xs rounded-md pl-5 pr-2 py-1">Preview</span>
+    </div>
+    <p class="mt-2 text-zinc-300/90 max-w-3xl">
       Devnet-0 explorer is in progress. While we finish it up, here’s a live snapshot of the network and key links.
     </p>
 
     <!-- Live Snapshot -->
-    <section class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Network</div>
+    <section class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4" aria-label="Live snapshot">
+      <!-- Network -->
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <!-- globe icon -->
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M12 2a10 10 0 100 20 10 10 0 000-20Zm0 0c3 3 3 15 0 20M12 2c-3 3-3 15 0 20M2 12h20" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Network
+        </div>
         <div class="mt-1 text-lg font-medium" id="chainName" aria-live="polite">Devnet-0</div>
       </div>
 
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">SS58</div>
-        <div class="mt-1 text-lg font-medium" id="ss58" aria-live="polite" data-fallback="73">73</div>
+      <!-- SS58 -->
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          SS58
+        </div>
+        <div class="mt-1 text-2xl font-semibold tabular-nums" id="ss58" aria-live="polite">73</div>
       </div>
 
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Avg block (s)</div>
-        <div class="mt-1 text-lg font-medium" id="avgBlock" aria-live="polite" data-fallback="6">6</div>
+      <!-- Avg Block -->
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M4 12h8l-2 3m8-3h-6l2-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Avg block (s)
+        </div>
+        <div class="mt-1 text-2xl font-semibold tabular-nums" id="avgBlock" aria-live="polite">6</div>
+        <!-- tiny sparkline (demo) -->
+        <svg id="spark" viewBox="0 0 100 20" class="mt-2 w-full h-5 opacity-70">
+          <polyline fill="none" stroke="currentColor" stroke-width="1" points="0,12 10,10 20,13 30,9 40,11 50,8 60,12 70,10 80,14 90,9 100,11"/>
+        </svg>
       </div>
 
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Release</div>
+      <!-- Release -->
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M8 7h8M7 12h10M6 17h12M4 5h16v14H4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Release
+        </div>
         <time class="mt-1 block text-lg font-medium" id="releaseAt" aria-live="polite">TBD</time>
+        <p id="countdown" class="text-xs text-zinc-400 mt-1">—</p>
       </div>
 
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:col-span-2 lg:col-span-1">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Height</div>
-        <div class="mt-1 text-2xl font-semibold tabular-nums" id="height" aria-live="polite">
-          <span class="inline-block w-28 h-6 skeleton rounded"></span>
+      <!-- Height -->
+      <div class="rounded-xl p-4 card sm:col-span-2 lg:col-span-1">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M4 20V8m0 0l4-4m-4 4l-4-4M12 20V4m8 16v-8m0 0l4 4m-4-4l-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Height
+        </div>
+        <div class="mt-1 text-3xl font-semibold tabular-nums" id="height" aria-live="polite">
+          <span class="inline-block w-28 h-7 skeleton rounded" aria-hidden="true"></span>
         </div>
       </div>
 
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:col-span-2 lg:col-span-1">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Peers</div>
-        <div class="mt-1 text-2xl font-semibold tabular-nums" id="peers" aria-live="polite">
-          <span class="inline-block w-16 h-6 skeleton rounded"></span>
+      <!-- Peers -->
+      <div class="rounded-xl p-4 card sm:col-span-2 lg:col-span-1">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M6 8a3 3 0 116 0 3 3 0 01-6 0Zm9 8a3 3 0 116 0 3 3 0 01-6 0ZM3 20a3 3 0 116 0 3 3 0 01-6 0Z" stroke="currentColor" stroke-width="1.2"/><path d="M9 10l6 6M12 8l6 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Peers
+        </div>
+        <div class="mt-1 text-3xl font-semibold tabular-nums" id="peers" aria-live="polite">
+          <span class="inline-block w-16 h-7 skeleton rounded" aria-hidden="true"></span>
         </div>
       </div>
     </section>
 
+    <!-- Search (disabled until live && RPC configured) -->
+    <section class="mt-8 p-6 rounded-xl border border-zinc-800 card" aria-label="Explorer search">
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="text-lg font-semibold">Search (hash / address)</h2>
+        <span id="rpcChip" class="text-xs rounded-md px-2 py-1 border border-zinc-800 bg-zinc-900/70">RPC: not configured</span>
+      </div>
+      <p class="text-sm text-zinc-400 mt-1">Activates when Devnet-0 is live and an RPC endpoint is configured.</p>
+      <div class="mt-3 flex flex-col sm:flex-row gap-3">
+        <input id="searchBox" type="text" inputmode="text" placeholder="0x… block/tx hash or SS58 address"
+               class="flex-1 rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 outline-none focus:border-zinc-400"
+               disabled>
+        <button id="searchBtn"
+                class="rounded-lg px-4 py-2 text-sm font-medium border border-zinc-700 hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled>
+          Search
+          <kbd class="ml-2 text-[10px] px-1.5 py-0.5 rounded border border-zinc-700 bg-zinc-950">Enter</kbd>
+        </button>
+      </div>
+      <p id="searchMsg" class="mt-2 text-sm text-zinc-400" role="status" aria-live="polite"></p>
+    </section>
+
     <!-- Coming Soon Panel -->
-    <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
+    <section class="mt-8 p-6 rounded-xl border border-zinc-800 card">
       <h2 class="text-xl font-semibold">Explorer: Coming Soon</h2>
-      <p class="mt-2 text-zinc-300">
-        We’re polishing core views:
-      </p>
+      <p class="mt-2 text-zinc-300">We’re polishing core views:</p>
       <ul class="mt-3 list-disc list-inside text-zinc-300 space-y-1">
-        <li>Latest blocks & transactions</li>
-        <li>Account pages with balance & transfers</li>
-        <li>Validator & era insights (staking overview)</li>
+        <li>Latest blocks &amp; transactions</li>
+        <li>Account pages with balance &amp; transfers</li>
+        <li>Validator &amp; era insights (staking overview)</li>
         <li>Simple search by hash / address</li>
       </ul>
-      <p class="mt-3 text-zinc-400 text-sm">
-        Testnet tokens have no monetary value.
-      </p>
+      <p class="mt-3 text-zinc-400 text-sm">Testnet tokens have no monetary value.</p>
     </section>
 
     <!-- Useful links -->
     <section class="mt-8 grid sm:grid-cols-2 gap-4">
-      <a href="/" class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 hover:bg-zinc-900 transition">
+      <a href="/" class="rounded-xl border border-zinc-800 p-5 transition card hover:scale-[1.01]">
         <div class="text-sm text-zinc-400">Get access</div>
         <div class="text-lg font-medium">Waitlist &rarr;</div>
       </a>
-      <a href="/leaderboard/" class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5 hover:bg-zinc-900 transition">
+      <a href="/leaderboard/" class="rounded-xl border border-zinc-800 p-5 transition card hover:scale-[1.01]">
         <div class="text-sm text-zinc-400">Community</div>
         <div class="text-lg font-medium">Leaderboard &rarr;</div>
       </a>
@@ -122,65 +231,145 @@
 
   <script>
     (function () {
+      // Align fallback with Faucet unless /api/config provides a date.
+      const FALLBACK_RELEASE_AT_ISO = '2025-10-17T17:00:00Z';
+
       const $ = (id) => document.getElementById(id);
+      const state = { live:false, releaseAt:null, timer:null, rpc:null };
 
-      /** Safe GET with timeout */
-      async function getJSON(path, ms = 5000) {
-        const ctrl = new AbortController();
-        const t = setTimeout(() => ctrl.abort(), ms);
-        try {
-          const r = await fetch(path, { signal: ctrl.signal, credentials: 'same-origin' });
-          if (!r.ok) return null;
+      const fmtDT = (d) => new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(d);
+      const setNum = (el, v) => { if(!el) return; el.classList.remove('skeleton'); el.textContent = (typeof v === 'number') ? v.toLocaleString() : '—'; };
+
+      async function getJSON(path, ms=5000){
+        const ctrl = new AbortController(); const to=setTimeout(()=>ctrl.abort(), ms);
+        try{
+          const r=await fetch(path,{signal:ctrl.signal,credentials:'same-origin',headers:{'Accept':'application/json'}});
+          if(!r.ok) return null; // tolerate 404/405
+          const ct=r.headers.get('content-type')||''; if(!ct.includes('application/json')) return null;
           return await r.json();
-        } catch {
-          return null;
-        } finally {
-          clearTimeout(t);
+        }catch{ return null; } finally{ clearTimeout(to); }
+      }
+
+      function updateCountdownOnce(){
+        const iso = state.releaseAt; if(!iso){ $('countdown').textContent='—'; return; }
+        const now=Date.now(), t=new Date(iso).getTime(); if(!Number.isFinite(t)){ $('countdown').textContent='—'; return; }
+        if(now>=t){ setLive(); return; }
+        const s=Math.max(0,Math.floor((t-now)/1000));
+        const d=Math.floor(s/86400), h=Math.floor((s%86400)/3600), m=Math.floor((s%3600)/60);
+        $('countdown').textContent = `${d}d ${h}h ${m}m`;
+      }
+
+      function startCountdown(){
+        updateCountdownOnce();
+        if(state.timer) clearInterval(state.timer);
+        state.timer = setInterval(updateCountdownOnce, 30_000);
+      }
+
+      function setRelease(iso){
+        state.releaseAt = iso;
+        const dt = new Date(iso);
+        $('releaseAt').dateTime = dt.toISOString();
+        $('releaseAt').textContent = fmtDT(dt);
+        startCountdown();
+        if (Date.now() >= dt.getTime()) setLive();
+      }
+
+      function setBadgeLive(){
+        $('badge').textContent = 'Live';
+        $('badge').className = 'beam text-xs rounded-md pl-5 pr-2 py-1';
+        $('countdown').textContent = 'Live';
+      }
+
+      function updateRpcChip(){
+        const chip = $('rpcChip');
+        if (state.rpc) {
+          chip.textContent = 'RPC: configured';
+          chip.className = 'text-xs rounded-md px-2 py-1 border border-emerald-700 bg-emerald-900/40';
+        } else {
+          chip.textContent = 'RPC: not configured';
+          chip.className = 'text-xs rounded-md px-2 py-1 border border-zinc-800 bg-zinc-900/70';
         }
       }
 
-      /** Hydrate config from /api/config */
-      async function hydrateConfig() {
-        const cfgWrap = await getJSON('/api/config');
-        const cfg = cfgWrap?.data || cfgWrap || null;
-        if (!cfg) return;
-
-        if (cfg.chainName) $('chainName').textContent = cfg.chainName;
-        if (typeof cfg.ss58Prefix === 'number') $('ss58').textContent = String(cfg.ss58Prefix);
-        if (typeof cfg.avgBlockSeconds === 'number') $('avgBlock').textContent = String(cfg.avgBlockSeconds);
-
-        if (cfg.releaseAt) {
-          const dt = new Date(cfg.releaseAt);
-          const fmt = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-          $('releaseAt').dateTime = dt.toISOString();
-          $('releaseAt').textContent = fmt.format(dt);
-        }
+      function setLive(){
+        if (state.live) return;
+        state.live = true;
+        setBadgeLive();
+        // enable search only if RPC is present
+        const ok = !!state.rpc;
+        $('searchBox').disabled = !ok;
+        $('searchBtn').disabled = !ok;
+        $('searchMsg').textContent = ok ? '' : 'Explorer is live, but RPC is not configured yet.';
       }
 
-      /** Hydrate live metrics from /api/metrics */
-      async function hydrateMetrics() {
-        const res = await getJSON('/api/metrics');
-        const m = res?.data || res || null;
-        if (!m) return;
-
-        if (typeof m.height === 'number') $('height').textContent = m.height.toLocaleString();
-        else $('height').textContent = '—';
-
-        if (typeof m.peers === 'number') $('peers').textContent = String(m.peers);
-        else $('peers').textContent = '—';
-
-        if (typeof m.ss58Prefix === 'number' && !$('ss58').dataset.locked) {
-          $('ss58').textContent = String(m.ss58Prefix);
+      async function hydrateConfig(){
+        const wrap = await getJSON('/api/config');
+        const cfg = wrap?.data || wrap || null;
+        if (cfg) {
+          if (cfg.chainName) $('chainName').textContent = cfg.chainName;
+          if (typeof cfg.ss58Prefix === 'number') $('ss58').textContent = String(cfg.ss58Prefix);
+          if (typeof cfg.avgBlockSeconds === 'number') $('avgBlock').textContent = String(cfg.avgBlockSeconds);
+          state.rpc = (cfg.rpcWS && /^wss?:\/\//.test(cfg.rpcWS) ? cfg.rpcWS : null);
+          updateRpcChip();
+          if (cfg.releaseAt) { setRelease(cfg.releaseAt); return; }
         }
-        if (typeof m.avgBlockSeconds === 'number' && !$('avgBlock').dataset.locked) {
-          $('avgBlock').textContent = String(m.avgBlockSeconds);
-        }
+        setRelease(FALLBACK_RELEASE_AT_ISO);
       }
 
-      // Initial fetch + gentle polling
+      async function hydrateMetrics(){
+        const wrap = await getJSON('/api/metrics');
+        const m = wrap?.data || wrap || null;
+        setNum($('height'), m?.height);
+        setNum($('peers'), m?.peers);
+        if (typeof m?.ss58Prefix === 'number') $('ss58').textContent = String(m.ss58Prefix);
+        if (typeof m?.avgBlockSeconds === 'number') $('avgBlock').textContent = String(m.avgBlockSeconds);
+        // simple sparkline nudge (demo noise around avg block seconds)
+        try {
+          const avg = Number($('avgBlock').textContent || '6') || 6;
+          const pts = Array.from({length:11}, (_,i)=> {
+            const jitter = (Math.random()*0.8)-0.4;
+            const y = 10 - Math.max(-4, Math.min(4, (avg - 6 + jitter))) * 2; // keep within viewbox
+            return `${i*10},${y+10}`;
+          }).join(' ');
+          const poly = document.querySelector('#spark polyline');
+          if (poly) poly.setAttribute('points', pts);
+        } catch {}
+      }
+
+      function classifyQuery(q){
+        if (!q) return 'empty';
+        const s = q.trim();
+        if (/^0x[0-9a-fA-F]{64,}$/.test(s)) return 'hash';
+        if (/^[1-9A-HJ-NP-Za-km-z]{35,64}$/.test(s)) return 'address';
+        return 'unknown';
+      }
+
+      $('searchBtn').addEventListener('click', () => {
+        const q = $('searchBox').value.trim();
+        const t = classifyQuery(q);
+        const msg = $('searchMsg');
+        msg.className = 'mt-2 text-sm';
+
+        if (!state.live) { msg.textContent = 'Explorer is not live yet.'; return; }
+        if (!state.rpc)  { msg.textContent = 'RPC is not configured yet.'; return; }
+        if (!q)          { msg.textContent = 'Enter a hash (0x…) or SS58 address.'; return; }
+
+        if (t === 'hash') {
+          msg.textContent = 'Searching (demo)… block/tx routes will be wired at go-live.';
+        } else if (t === 'address') {
+          msg.textContent = 'Searching (demo)… address page will be wired at go-live.';
+        } else {
+          msg.textContent = 'Unrecognized query. Paste a 0x… hash or an SS58 address.';
+        }
+      });
+
+      // Boot
       hydrateConfig();
       hydrateMetrics();
-      setInterval(hydrateMetrics, 10000);
+      setInterval(hydrateMetrics, 10_000);
+
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) updateCountdownOnce(); });
+      window.addEventListener('focus', updateCountdownOnce, { passive:true });
     })();
   </script>
 </body>

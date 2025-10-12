@@ -4,106 +4,209 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Quantara Status — Devnet-0 (Live Snapshot)</title>
-  <meta name="description" content="Quantara Devnet-0 status snapshot: APIs, live node metrics, and release info."/>
-  <meta name="theme-color" content="#0a0b0d">
+  <meta name="description" content="Quantara Devnet-0 status snapshot: APIs, live node metrics, and release info.">
+  <meta name="theme-color" content="#000000">
   <meta name="color-scheme" content="dark">
   <meta name="robots" content="noindex">
   <link rel="icon" href="data:,">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com" defer></script>
+
   <style>
-    .badge{display:inline-flex;align-items:center;gap:.4rem;padding:.2rem .5rem;border-radius:.5rem;font-size:.75rem}
-    .ok{color:#0f0;background:rgba(0,255,0,.1);border:1px solid rgba(0,255,0,.25)}
-    .warn{color:#ff0;background:rgba(255,255,0,.1);border:1px solid rgba(255,255,0,.25)}
-    .err{color:#f66;background:rgba(255,0,0,.1);border:1px solid rgba(255,0,0,.25)}
+    :root { --q-accent: 234,179,8; /* yellow-500 */ }
+
+    /* === Cosmic backdrop (CSP-safe) === */
+    body {
+      background:
+        radial-gradient(1200px 600px at 18% -10%, rgba(255,255,255,.06), transparent 60%),
+        radial-gradient(900px 500px at 85% 0%, rgba(234,179,8,.07), transparent 60%),
+        #000;
+      position: relative;
+      overflow-x: hidden;
+      color: #fff;
+    }
+    .bg-grid::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .15;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.08) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+    }
+    .nebula::after {
+      content:""; position:absolute; inset:-25% -10% auto auto; width:60vw; height:60vh;
+      background: radial-gradient(closest-side, rgba(234,179,8,.16), rgba(234,179,8,0));
+      filter: blur(40px); opacity:.55; transform: translateZ(0);
+    }
+
+    /* Cards / glass */
+    .card {
+      background: linear-gradient(180deg, rgba(24,24,27,.65), rgba(9,9,11,.65));
+      border: 1px solid rgba(63,63,70,.7);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset, 0 10px 30px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+    }
+    .card:hover { border-color: rgba(161,161,170,.6); }
+
+    /* Skeleton */
     .skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.06)}
     .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
       background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
       animation:shimmer 1.2s linear infinite}
     @keyframes shimmer{100%{transform:translateX(100%)}}
     @media (prefers-reduced-motion: reduce){.skeleton::after{animation:none}}
+
+    /* Pills */
+    .pill { display:inline-flex; align-items:center; gap:.4rem; padding:.2rem .55rem; border-radius:.5rem; font-size:.75rem }
+    .ok   { color:#34d399; background:rgba(16,185,129,.12); border:1px solid rgba(16,185,129,.35) }
+    .warn { color:#fbbf24; background:rgba(251,191,36,.12); border:1px solid rgba(251,191,36,.35) }
+    .err  { color:#f87171; background:rgba(248,113,113,.12); border:1px solid rgba(248,113,113,.35) }
+
+    /* Focus */
+    :focus-visible{outline:2px solid rgba(var(--q-accent),.7); outline-offset:2px; border-radius:8px}
+
+    /* Latency bar (inline SVG progress) */
+    .latency svg { width: 100%; height: 6px; display: block; }
+    .latency .track { fill: rgba(255,255,255,.08); }
+    .latency .fill  { fill: currentColor; opacity: .8; }
+
+    /* Tiny counters */
+    .metric-xxl { font-variant-numeric: tabular-nums; letter-spacing: .01em }
   </style>
 </head>
-<body class="min-h-screen bg-black text-white selection:bg-yellow-500/30">
-  <main class="max-w-5xl mx-auto px-6 py-12">
+<body class="min-h-screen bg-grid">
+  <div class="nebula"></div>
+
+  <main class="relative max-w-5xl mx-auto px-6 py-12">
     <header class="flex items-center justify-between gap-4">
       <a href="/" class="text-sm opacity-70 hover:opacity-100 transition">&larr; Back to Waitlist</a>
       <nav class="flex items-center gap-2 text-sm">
-        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/wallet/">Wallet</a>
-        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/faucet/">Faucet</a>
-        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/explorer/">Explorer</a>
-        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900" href="/leaderboard/">Leaderboard</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900/70 transition card" href="/wallet/">Wallet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900/70 transition card" href="/faucet/">Faucet</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900/70 transition card" href="/explorer/">Explorer</a>
+        <a class="px-3 py-1.5 rounded-lg border border-zinc-800 hover:bg-zinc-900/70 transition card" href="/leaderboard/">Leaderboard</a>
       </nav>
     </header>
 
-    <h1 class="mt-6 text-3xl md:text-4xl font-semibold tracking-tight">Network Status</h1>
-    <p class="mt-2 text-zinc-400">Live snapshot of Devnet-0. Testnet tokens have no monetary value.</p>
+    <div class="mt-6 flex items-center gap-4">
+      <h1 class="text-3xl md:text-4xl font-semibold tracking-tight">Network Status</h1>
+      <span id="livePill" class="pill warn">Preview</span>
+    </div>
+    <p class="mt-2 text-zinc-300">Live snapshot of Devnet-0. Testnet tokens have no monetary value.</p>
 
     <!-- Live network snapshot -->
     <section class="mt-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Network</div>
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M12 2a10 10 0 100 20 10 10 0 000-20Zm0 0c3 3 3 15 0 20M12 2c-3 3-3 15 0 20M2 12h20" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Network
+        </div>
         <div id="chainName" class="mt-1 text-lg font-medium">Devnet-0</div>
       </div>
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">SS58</div>
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          SS58
+        </div>
         <div id="ss58" class="mt-1 text-lg font-medium" data-fallback="73">73</div>
       </div>
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Avg block (s)</div>
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M12 4a8 8 0 100 16 8 8 0 000-16Zm5 8H7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Avg block (s)
+        </div>
         <div id="avgBlock" class="mt-1 text-lg font-medium" data-fallback="6">6</div>
       </div>
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Release</div>
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M8 7h8M7 12h10M6 17h12M4 5h16v14H4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Release
+        </div>
         <time id="releaseAt" class="mt-1 block text-lg font-medium">TBD</time>
       </div>
 
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:col-span-2 lg:col-span-1">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Height</div>
-        <div id="height" class="mt-1 text-2xl font-semibold tabular-nums">
-          <span class="inline-block w-28 h-6 skeleton rounded"></span>
+      <div class="rounded-xl p-4 card sm:col-span-2 lg:col-span-1">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M4 20V8m0 0l-4-4m4 4l4-4M12 20V4m8 16v-8m0 0l4 4m-4-4l-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Height
+        </div>
+        <div id="height" class="mt-1 text-3xl font-semibold metric-xxl">
+          <span class="inline-block w-28 h-7 skeleton rounded"></span>
         </div>
       </div>
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4 sm:col-span-2 lg:col-span-1">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Peers</div>
-        <div id="peers" class="mt-1 text-2xl font-semibold tabular-nums">
-          <span class="inline-block w-16 h-6 skeleton rounded"></span>
+      <div class="rounded-xl p-4 card sm:col-span-2 lg:col-span-1">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M6 8a3 3 0 116 0 3 3 0 01-6 0Zm9 8a3 3 0 116 0 3 3 0 01-6 0Z" stroke="currentColor" stroke-width="1.2"/><path d="M9 10l6 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Peers
+        </div>
+        <div id="peers" class="mt-1 text-3xl font-semibold metric-xxl">
+          <span class="inline-block w-16 h-7 skeleton rounded"></span>
         </div>
       </div>
     </section>
 
     <!-- Service checks -->
-    <section class="mt-8 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
+    <section class="mt-8 p-6 rounded-xl card border border-zinc-800">
       <div class="flex items-center justify-between">
         <h2 class="text-xl font-semibold">Service Checks</h2>
         <div class="text-xs text-zinc-400">Last updated: <time id="updatedAt">—</time></div>
       </div>
 
       <div class="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <!-- /api/health -->
         <div class="rounded-lg border border-zinc-800 p-4">
-          <div class="text-sm text-zinc-400">/api/health</div>
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-zinc-400">/api/health</div>
+            <span id="healthBadge" class="pill skeleton" aria-live="polite">&nbsp;</span>
+          </div>
           <div class="mt-2 flex items-center justify-between">
-            <span id="healthBadge" class="badge skeleton">&nbsp;</span>
             <span id="healthLatency" class="text-xs text-zinc-400 tabular-nums">— ms</span>
+            <span id="healthRegion" class="text-xs text-zinc-500">region: —</span>
           </div>
-          <div id="healthEnv" class="mt-1 text-xs text-zinc-500">env: —</div>
+          <div class="latency mt-2 text-emerald-400">
+            <svg viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true">
+              <rect class="track" x="0" y="0" width="100" height="6" rx="3"/>
+              <rect id="healthBar" class="fill" x="0" y="0" width="0" height="6" rx="3"/>
+            </svg>
+          </div>
+          <div id="healthEnv" class="mt-2 text-xs text-zinc-500">env: — • uptime: —s</div>
         </div>
 
+        <!-- /api/config -->
         <div class="rounded-lg border border-zinc-800 p-4">
-          <div class="text-sm text-zinc-400">/api/config</div>
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-zinc-400">/api/config</div>
+            <span id="configBadge" class="pill skeleton" aria-live="polite">&nbsp;</span>
+          </div>
           <div class="mt-2 flex items-center justify-between">
-            <span id="configBadge" class="badge skeleton">&nbsp;</span>
             <span id="configLatency" class="text-xs text-zinc-400 tabular-nums">— ms</span>
+            <span id="configRpcShort" class="text-xs text-zinc-500 truncate">rpc: —</span>
           </div>
-          <div id="configRpc" class="mt-1 text-xs text-zinc-500 truncate">rpc: —</div>
+          <div class="latency mt-2 text-yellow-400">
+            <svg viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true">
+              <rect class="track" x="0" y="0" width="100" height="6" rx="3"/>
+              <rect id="configBar" class="fill" x="0" y="0" width="0" height="6" rx="3"/>
+            </svg>
+          </div>
+          <div id="configBits" class="mt-2 text-xs text-zinc-500">chain: — • ss58: — • avg: —s</div>
         </div>
 
+        <!-- /api/metrics -->
         <div class="rounded-lg border border-zinc-800 p-4">
-          <div class="text-sm text-zinc-400">/api/metrics</div>
-          <div class="mt-2 flex items-center justify-between">
-            <span id="metricsBadge" class="badge skeleton">&nbsp;</span>
-            <span id="metricsLatency" class="text-xs text-zinc-400 tabular-nums">— ms</span>
+          <div class="flex items-center justify-between">
+            <div class="text-sm text-zinc-400">/api/metrics</div>
+            <span id="metricsBadge" class="pill skeleton" aria-live="polite">&nbsp;</span>
           </div>
-          <div id="metricsCounts" class="mt-1 text-xs text-zinc-500">waitlist: — • countries: —</div>
+          <div class="mt-2 flex items-center justify-between">
+            <span id="metricsLatency" class="text-xs text-zinc-400 tabular-nums">— ms</span>
+            <span id="metricsCounts" class="text-xs text-zinc-500">waitlist: — • countries: —</span>
+          </div>
+          <div class="latency mt-2 text-blue-400">
+            <svg viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true">
+              <rect class="track" x="0" y="0" width="100" height="6" rx="3"/>
+              <rect id="metricsBar" class="fill" x="0" y="0" width="0" height="6" rx="3"/>
+            </svg>
+          </div>
+          <div id="metricsBits" class="mt-2 text-xs text-zinc-500">height: — • peers: —</div>
         </div>
       </div>
 
@@ -125,10 +228,19 @@
       const $ = (id) => document.getElementById(id);
       const fmtDT = (d) => new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(d);
 
+      // Map latency (ms) into 0..100 bar width and severity
+      function setLatency(barEl, badgeEl, ms) {
+        const clamped = Math.max(0, Math.min(1000, ms)); // cap at 1000ms
+        const pct = Math.round((clamped / 1000) * 100);
+        barEl.setAttribute('width', String(pct));
+        const ok = ms < 300, warn = ms >= 300 && ms < 700;
+        setBadge(badgeEl, ok, warn);
+      }
+
       function setBadge(el, ok, warn=false){
         el.classList.remove('skeleton','ok','warn','err');
         el.textContent = ok ? 'OK' : (warn ? 'WARN' : 'ERROR');
-        el.classList.add(ok ? 'ok' : (warn ? 'warn' : 'err'), 'badge');
+        el.classList.add(ok ? 'ok' : (warn ? 'warn' : 'err'), 'pill');
       }
 
       async function timedJSON(path, ms=5000) {
@@ -136,10 +248,12 @@
         const t0 = performance.now();
         const to = setTimeout(() => ctrl.abort(), ms);
         try {
-          const r = await fetch(path, { signal: ctrl.signal, credentials: 'same-origin' });
+          const r = await fetch(path, { signal: ctrl.signal, credentials: 'same-origin', headers: { 'Accept':'application/json' } });
           const t1 = performance.now();
           const latency = Math.round(t1 - t0);
           if (!r.ok) return { ok: false, latency, data: null };
+          const ct = r.headers.get('content-type') || '';
+          if (!ct.includes('application/json')) return { ok: false, latency, data: null };
           const json = await r.json();
           return { ok: true, latency, data: json?.data ?? json };
         } catch {
@@ -153,40 +267,49 @@
       async function hydrateConfig(){
         const r = await timedJSON('/api/config');
         $('configLatency').textContent = r.latency + ' ms';
+        setLatency($('configBar'), $('configBadge'), r.latency);
+
         if (r.ok && r.data){
-          setBadge($('configBadge'), true);
-          if (r.data.rpcWS) $('configRpc').textContent = 'rpc: ' + r.data.rpcWS;
-          if (r.data.chainName) $('chainName').textContent = r.data.chainName;
-          if (typeof r.data.ss58Prefix === 'number') $('ss58').textContent = String(r.data.ss58Prefix);
-          if (typeof r.data.avgBlockSeconds === 'number') $('avgBlock').textContent = String(r.data.avgBlockSeconds);
-          if (r.data.releaseAt) {
-            const dt = new Date(r.data.releaseAt);
+          const cfg = r.data;
+          if (cfg.chainName) $('chainName').textContent = cfg.chainName;
+          if (typeof cfg.ss58Prefix === 'number') $('ss58').textContent = String(cfg.ss58Prefix);
+          if (typeof cfg.avgBlockSeconds === 'number') $('avgBlock').textContent = String(cfg.avgBlockSeconds);
+          if (cfg.releaseAt) {
+            const dt = new Date(cfg.releaseAt);
             $('releaseAt').dateTime = dt.toISOString();
             $('releaseAt').textContent = fmtDT(dt);
           }
+          $('configRpcShort').textContent = 'rpc: ' + (cfg.rpcWS || '—');
+          $('configBits').textContent = `chain: ${cfg.chainName || '—'} • ss58: ${cfg.ss58Prefix ?? '—'} • avg: ${cfg.avgBlockSeconds ?? '—'}s`;
         } else {
-          setBadge($('configBadge'), false);
-          $('configRpc').textContent = 'rpc: —';
+          $('configRpcShort').textContent = 'rpc: —';
+          $('configBits').textContent = 'chain: — • ss58: — • avg: —s';
         }
       }
 
       async function hydrateMetrics(){
         const r = await timedJSON('/api/metrics');
         $('metricsLatency').textContent = r.latency + ' ms';
+        setLatency($('metricsBar'), $('metricsBadge'), r.latency);
+
         if (r.ok && r.data){
-          setBadge($('metricsBadge'), true);
           const m = r.data;
+          $('metricsCounts').textContent =
+            `waitlist: ${typeof m.waitlistCount==='number'?m.waitlistCount.toLocaleString():'—'} • countries: ${typeof m.countryCount==='number'?m.countryCount.toLocaleString():'—'}`;
+
+          $('metricsBits').textContent =
+            `height: ${typeof m.height==='number'?m.height.toLocaleString():'—'} • peers: ${typeof m.peers==='number'?m.peers:'—'}`;
+
           if (typeof m.height === 'number') $('height').textContent = m.height.toLocaleString();
           else $('height').textContent = '—';
           if (typeof m.peers === 'number') $('peers').textContent = String(m.peers);
           else $('peers').textContent = '—';
-          $('metricsCounts').textContent =
-            `waitlist: ${typeof m.waitlistCount==='number'?m.waitlistCount.toLocaleString():'—'} • countries: ${typeof m.countryCount==='number'?m.countryCount.toLocaleString():'—'}`;
+
           if (typeof m.ss58Prefix === 'number') $('ss58').textContent = String(m.ss58Prefix);
           if (typeof m.avgBlockSeconds === 'number') $('avgBlock').textContent = String(m.avgBlockSeconds);
         } else {
-          setBadge($('metricsBadge'), false);
           $('metricsCounts').textContent = 'waitlist: — • countries: —';
+          $('metricsBits').textContent = 'height: — • peers: —';
           $('height').textContent = '—';
           $('peers').textContent = '—';
         }
@@ -195,12 +318,21 @@
       async function hydrateHealth(){
         const r = await timedJSON('/api/health');
         $('healthLatency').textContent = r.latency + ' ms';
-        if (r.ok && r.data && (r.data.ok || r.data.db === 'up')){
-          setBadge($('healthBadge'), true);
-          $('healthEnv').textContent = 'env: ' + (r.data.env || 'unknown');
+        setLatency($('healthBar'), $('healthBadge'), r.latency);
+
+        if (r.ok && r.data){
+          const h = r.data;
+          const healthy = !!(h.ok ?? (h.db === 'up'));
+          setBadge($('healthBadge'), healthy, !healthy && r.latency < 700);
+          $('healthEnv').textContent = `env: ${h.env || 'unknown'} • uptime: ${Math.round(Number(h.uptime || 0))}s`;
+          $('healthRegion').textContent = `region: ${h.region || '—'}`;
+          // Live badge flip when we pass release time (config handles actual)
+          const badge = $('livePill');
+          badge.textContent = healthy ? 'Live' : 'Preview';
+          badge.className = 'pill ' + (healthy ? 'ok' : 'warn');
         } else {
-          setBadge($('healthBadge'), false);
-          $('healthEnv').textContent = 'env: —';
+          $('healthEnv').textContent = 'env: — • uptime: —s';
+          $('healthRegion').textContent = 'region: —';
         }
       }
 

@@ -4,101 +4,219 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Quantara Faucet — Devnet-0</title>
-  <meta name="description" content="Claim QTR (testnet) for Quantara Devnet-0. Opens when the network goes live."/>
+  <meta name="description" content="Claim QTR (testnet) for Quantara Devnet-0. Opens when the network goes live.">
   <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#000000">
   <link rel="icon" href="data:,">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com" defer></script>
   <!-- Turnstile is optional; if present we'll render it after go-live -->
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+
   <style>
+    :root { --q-accent: 234,179,8; /* yellow-500 */ }
+
+    /* Cosmic background (CSP-safe) */
+    body {
+      background:
+        radial-gradient(1200px 600px at 15% -10%, rgba(255,255,255,.06), transparent 60%),
+        radial-gradient(900px 500px at 85% 0%, rgba(234,179,8,.07), transparent 60%),
+        #000;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .bg-grid::before {
+      content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .15;
+      background-image:
+        linear-gradient(to right, rgba(255,255,255,.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,.08) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, transparent, black 18%, black 82%, transparent);
+    }
+    .nebula::after {
+      content:""; position:absolute; inset:-20% -10% auto auto; width:60vw; height:60vh;
+      background: radial-gradient(closest-side, rgba(234,179,8,.16), rgba(234,179,8,0));
+      filter: blur(40px); opacity:.55; transform: translateZ(0);
+    }
+
+    /* Cards */
+    .card {
+      background: linear-gradient(180deg, rgba(24,24,27,.65), rgba(9,9,11,.65));
+      border: 1px solid rgba(63,63,70,.7);
+      box-shadow: 0 0 0 1px rgba(255,255,255,.02) inset, 0 10px 30px rgba(0,0,0,.35);
+      backdrop-filter: blur(6px);
+    }
+    .card:hover { border-color: rgba(161,161,170,.6); }
+
+    /* Beam badge (Preview/Live pill) */
+    .beam {
+      position: relative;
+      border: 1px solid #064e3b;
+      background: linear-gradient(90deg, rgba(16,185,129,.12), rgba(5,150,105,.1));
+    }
+    .beam::before {
+      content:""; position:absolute; left:8px; top:50%; width:8px; height:8px; border-radius:9999px;
+      transform: translateY(-50%); background:#10b981; box-shadow: 0 0 12px #10b981;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+    .beam.preview {
+      border-color:#3f3f46; background: linear-gradient(90deg, rgba(161,161,170,.12), rgba(82,82,91,.1));
+    }
+    .beam.preview::before { background:#a1a1aa; box-shadow: 0 0 8px #a1a1aa; animation:none; }
+
+    @keyframes pulse {
+      0%,100% { transform: translateY(-50%) scale(1); opacity: 1; }
+      50%     { transform: translateY(-50%) scale(1.35); opacity: .7; }
+    }
+
+    /* Token droplet header accent */
+    .token-ring {
+      position: relative; width: 52px; height: 52px; border-radius: 9999px;
+      background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.25), rgba(255,255,255,0) 55%);
+      border: 1px solid rgba(234,179,8,.35);
+      box-shadow: 0 0 24px rgba(234,179,8,.25), inset 0 0 16px rgba(234,179,8,.15);
+    }
+    .token-ring::after {
+      content: ""; position: absolute; inset: 9px; border-radius: inherit;
+      background: radial-gradient(circle at 65% 70%, rgba(234,179,8,.35), rgba(234,179,8,.05) 55%, transparent 70%);
+      filter: blur(0.2px);
+    }
+
+    /* Skeleton shimmer */
     .skeleton{position:relative;overflow:hidden;background:rgba(255,255,255,.06)}
     .skeleton::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
       background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
       animation:shimmer 1.2s linear infinite}
     @keyframes shimmer{100%{transform:translateX(100%)}}
     @media (prefers-reduced-motion: reduce){.skeleton::after{animation:none}}
+
     pre, code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace }
+    :focus-visible { outline: 2px solid rgba(234,179,8,.7); outline-offset: 2px; border-radius: 8px; }
   </style>
 </head>
-<body class="min-h-screen bg-black text-white selection:bg-yellow-500/30">
-  <main class="max-w-4xl mx-auto px-6 py-16">
-    <a href="/" class="text-sm opacity-70 hover:opacity-100 transition">&larr; Back to Waitlist</a>
+<body class="min-h-screen text-white selection:bg-yellow-500/30 bg-grid">
+  <div class="nebula"></div>
+
+  <noscript>
+    <div class="max-w-4xl mx-auto px-6 pt-6">
+      <div class="rounded-lg border border-yellow-700 bg-yellow-500/10 p-4 text-sm">
+        JavaScript is required to fetch network status and enable claims when live.
+      </div>
+    </div>
+  </noscript>
+
+  <main class="relative max-w-4xl mx-auto px-6 py-16">
+    <a href="/" class="text-sm opacity-70 hover:opacity-100 transition" aria-label="Back to Waitlist">&larr; Back to Waitlist</a>
 
     <header class="mt-6">
-      <div class="flex items-center gap-3">
-        <h1 class="text-4xl font-semibold tracking-tight">Quantara Faucet</h1>
-        <span id="badge" class="text-xs rounded-md px-2 py-1 border border-zinc-800 bg-zinc-900/70">Preview</span>
+      <div class="flex items-center gap-4">
+        <div class="token-ring" aria-hidden="true"></div>
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="text-4xl font-semibold tracking-tight">Quantara Faucet</h1>
+            <span id="badge" class="beam preview text-xs rounded-md pl-5 pr-2 py-1">Preview</span>
+          </div>
+          <p class="mt-2 text-zinc-300">
+            Claim <strong>QTR</strong> (testnet) for Devnet-0. Testnet tokens have <strong>no monetary value</strong>.
+          </p>
+        </div>
       </div>
-      <p class="mt-2 text-zinc-300">
-        Claim <strong>QTR</strong> (testnet) for Devnet-0. Testnet tokens have <strong>no monetary value</strong>.
-      </p>
     </header>
 
-    <!-- When /api/config is available, hydrate these -->
-    <section class="mt-6 grid md:grid-cols-2 gap-4">
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Release</div>
+    <!-- Network configuration -->
+    <section class="mt-6 grid md:grid-cols-2 gap-4" aria-label="Network configuration">
+      <div class="rounded-xl p-5 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <!-- calendar icon -->
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M8 7h8M7 12h10M6 17h12M4 5h16v14H4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Release
+        </div>
         <time id="releaseAt" class="mt-1 block text-lg font-medium">TBD</time>
         <p id="countdown" class="mt-1 text-sm text-zinc-400">—</p>
       </div>
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-5">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">RPC (WS)</div>
-        <div id="rpc" class="mt-1 truncate text-lg font-medium">wss://rpc.devnet-0.quantara.xyz</div>
+      <div class="rounded-xl p-5 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <!-- plug icon -->
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M8 7v6m8-6v6M5 13h14M12 19v-6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          RPC (WS)
+        </div>
+        <div id="rpc" class="mt-1 truncate text-lg font-medium" title="WebSocket RPC endpoint">RPC: not configured</div>
         <p class="mt-1 text-xs text-zinc-500">Configured from <code>/api/config</code></p>
       </div>
     </section>
 
-    <section class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">SS58</div>
+    <!-- Status tiles -->
+    <section class="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3" aria-label="Network status">
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M4 7h16M4 12h16M4 17h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          SS58
+        </div>
         <div id="ss58" class="mt-1 text-2xl font-semibold tabular-nums">73</div>
       </div>
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Decimals</div>
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M4 6h16M4 12h10M4 18h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Decimals
+        </div>
         <div id="decimals" class="mt-1 text-2xl font-semibold tabular-nums">12</div>
       </div>
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Height</div>
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M4 20V8m0 0l4-4m-4 4l-4-4M12 20V4m8 16v-8m0 0l4 4m-4-4l-4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Height
+        </div>
         <div id="height" class="mt-1 text-2xl font-semibold tabular-nums">
-          <span class="inline-block w-24 h-6 rounded skeleton"></span>
+          <span class="inline-block w-24 h-6 rounded skeleton" aria-hidden="true"></span>
         </div>
       </div>
-      <div class="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">
-        <div class="text-xs uppercase tracking-wide text-zinc-400">Peers</div>
+      <div class="rounded-xl p-4 card">
+        <div class="flex items-center gap-2 text-xs uppercase tracking-wide text-zinc-400">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="opacity-80"><path d="M6 8a3 3 0 116 0 3 3 0 01-6 0Zm9 8a3 3 0 116 0 3 3 0 01-6 0ZM3 20a3 3 0 116 0 3 3 0 01-6 0Z" stroke="currentColor" stroke-width="1.2"/><path d="M9 10l6 6M12 8l6 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Peers
+        </div>
         <div id="peers" class="mt-1 text-2xl font-semibold tabular-nums">
-          <span class="inline-block w-12 h-6 rounded skeleton"></span>
+          <span class="inline-block w-12 h-6 rounded skeleton" aria-hidden="true"></span>
         </div>
       </div>
     </section>
 
     <!-- Claim card -->
-    <section class="mt-8 p-6 rounded-2xl border border-zinc-800 bg-zinc-900/60">
-      <h2 class="text-xl font-semibold">Claim QTR (testnet)</h2>
+    <section class="mt-8 p-6 rounded-2xl card border border-zinc-800" aria-label="Claim form">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">Claim QTR (testnet)</h2>
+        <span id="rpcChip" class="text-xs rounded-md px-2 py-1 border border-zinc-800 bg-zinc-900/70">RPC: not required</span>
+      </div>
       <p class="mt-1 text-zinc-400 text-sm">
         Use your <strong>SS58=73</strong> address. Claims open when Devnet-0 is live.
       </p>
 
-      <form id="claimForm" class="mt-4 space-y-3" onsubmit="return false;">
-        <label class="block text-sm text-zinc-300">Your Quantara address</label>
+      <form id="claimForm" class="mt-4 space-y-3" onsubmit="return false;" novalidate>
+        <label class="block text-sm text-zinc-300" for="addr">Your Quantara address</label>
         <input id="addr" type="text" inputmode="text" autocomplete="off" spellcheck="false"
                placeholder="5F.... (SS58=73)"
                class="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 outline-none focus:border-zinc-400"
-               disabled>
+               aria-describedby="addrHint" disabled>
+        <p id="addrHint" class="text-xs text-zinc-500">Tip: Address should be Base58, typically starting with “5…”.</p>
 
         <!-- Optional Turnstile placeholder -->
         <div id="ts-wrap" class="hidden">
-          <div id="turnstile-container" class="mt-2"></div>
+          <div id="turnstile-container" class="mt-2" aria-label="Human verification"></div>
         </div>
 
         <div class="flex flex-wrap items-center gap-3 pt-1">
           <button id="claimBtn"
                   class="rounded-lg bg-yellow-500 px-4 py-2 text-sm font-medium text-black hover:bg-yellow-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled>Claim</button>
+                  disabled>
+            Claim
+            <svg class="inline ml-2 -mt-[2px]" width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 12h12m0 0l-5-5m5 5l-5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
           <a href="/wallet/" class="rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800 transition">Open Wallet</a>
           <a href="/explorer/" class="rounded-lg border border-zinc-700 px-4 py-2 text-sm hover:bg-zinc-800 transition">Explorer</a>
         </div>
 
-        <p id="claimMsg" class="mt-2 text-sm"></p>
+        <p id="claimMsg" class="mt-2 text-sm" role="status" aria-live="polite"></p>
       </form>
 
       <!-- Rules -->
@@ -123,32 +241,36 @@
 
   <script>
     (function () {
-      // ---- Release fallback (7 days from now) ----
-      // Use config.releaseAt if available; otherwise this ISO is used.
-      const FALLBACK_RELEASE_AT_ISO = '2025-10-17T17:00:00Z'; // <-- faucet goes live
+      // ---- Release fallback (aligned with Explorer) ----
+      const FALLBACK_RELEASE_AT_ISO = '2025-10-17T17:00:00Z';
 
-      // ---- Your real Turnstile site key ----
+      // ---- Your Turnstile site key ----
       window.TURNSTILE_SITE_KEY = '0x4AAAAAAB5BBZiG4VTPYuEi';
 
       const $ = (id) => document.getElementById(id);
-      const state = { live: false, tsToken: null, releaseAt: null };
+      const state = { live: false, tsToken: null, releaseAt: null, countdownTimer: null, rpc: null };
 
-      const setNum = (el, v) => { el?.classList?.remove('skeleton'); el.textContent = (typeof v === 'number') ? v.toLocaleString() : '—'; };
-
-      function fmtDT(d){ return new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(d); }
+      const BASE58_RE = /^[1-9A-HJ-NP-Za-km-z]+$/;
+      const setNum = (el, v) => { if(!el) return; el.classList.remove('skeleton'); el.textContent = (typeof v === 'number') ? v.toLocaleString() : '—'; };
+      const fmtDT = (d) => new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(d);
 
       async function getJSON(path, ms=5000){
         const ctrl = new AbortController(); const to=setTimeout(()=>ctrl.abort(), ms);
         try{
-          const r=await fetch(path,{signal:ctrl.signal,credentials:'same-origin'});
+          const r=await fetch(path,{signal:ctrl.signal,credentials:'same-origin',headers:{'Accept':'application/json'}});
           if(!r.ok) return null;
+          const ct=r.headers.get('content-type')||''; if(!ct.includes('application/json')) return null;
           return await r.json();
-        } catch{
-          return null;
-        } finally{ clearTimeout(to); }
+        } catch{ return null; } finally{ clearTimeout(to); }
       }
 
-      function tickCountdown(){
+      function setBadgeLive(){
+        const b = $('badge');
+        b.textContent = 'Live';
+        b.className = 'beam text-xs rounded-md pl-5 pr-2 py-1';
+      }
+
+      function updateCountdownOnce(){
         const iso = state.releaseAt;
         if (!iso) { $('countdown').textContent = '—'; return; }
         const now = Date.now();
@@ -156,9 +278,9 @@
         if (!Number.isFinite(t)) { $('countdown').textContent = '—'; return; }
 
         if (now >= t) {
-          $('badge').textContent = 'Live';
           $('countdown').textContent = 'Live';
           enableForm();
+          setBadgeLive();
           return;
         }
         const s = Math.max(0, Math.floor((t-now)/1000));
@@ -166,13 +288,18 @@
         $('countdown').textContent = `${d}d ${h}h ${m}m`;
       }
 
+      function startCountdown(){
+        updateCountdownOnce();
+        if (state.countdownTimer) clearInterval(state.countdownTimer);
+        state.countdownTimer = setInterval(updateCountdownOnce, 30_000);
+      }
+
       function setRelease(iso){
         state.releaseAt = iso;
         const dt = new Date(iso);
         $('releaseAt').dateTime = dt.toISOString();
         $('releaseAt').textContent = fmtDT(dt);
-        tickCountdown();
-        setInterval(tickCountdown, 30_000);
+        startCountdown();
         if (Date.now() >= dt.getTime()) enableForm();
       }
 
@@ -181,13 +308,14 @@
         state.live = true;
         $('addr').disabled = false;
         $('claimBtn').disabled = false;
-        // If Turnstile is available, render it
+        // Optional Turnstile render
         if (window.turnstile) {
           $('ts-wrap').classList.remove('hidden');
           window.turnstile.render('#turnstile-container', {
             sitekey: window.TURNSTILE_SITE_KEY,
             theme: 'dark',
-            callback: (token) => { state.tsToken = token; }
+            callback: (token) => { state.tsToken = token; },
+            'expired-callback': () => { state.tsToken = null; }
           });
         }
       }
@@ -196,13 +324,22 @@
         const wrap = await getJSON('/api/config');
         const cfg = wrap?.data || wrap || null;
         if (cfg) {
-          if (cfg.rpcWS) $('rpc').textContent = cfg.rpcWS;
+          // RPC may be omitted until your node is ready
+          if (cfg.rpcWS && /^wss?:\/\//.test(cfg.rpcWS)) {
+            state.rpc = cfg.rpcWS;
+            $('rpc').textContent = cfg.rpcWS;
+            $('rpcChip').textContent = 'RPC: configured';
+            $('rpcChip').className = 'text-xs rounded-md px-2 py-1 border border-emerald-700 bg-emerald-900/40';
+          } else {
+            state.rpc = null;
+            $('rpc').textContent = 'RPC: not configured';
+            $('rpcChip').textContent = 'RPC: not required';
+            $('rpcChip').className = 'text-xs rounded-md px-2 py-1 border border-zinc-800 bg-zinc-900/70';
+          }
+
           if (cfg.ss58Prefix != null) $('ss58').textContent = String(cfg.ss58Prefix);
           if (cfg.tokenDecimals != null) $('decimals').textContent = String(cfg.tokenDecimals);
-          if (cfg.releaseAt) {
-            setRelease(cfg.releaseAt);
-            return;
-          }
+          if (cfg.releaseAt) { setRelease(cfg.releaseAt); return; }
         }
         // No API or missing releaseAt -> use fallback
         setRelease(FALLBACK_RELEASE_AT_ISO);
@@ -215,28 +352,74 @@
         setNum($('peers'), m?.peers);
       }
 
+      function getParam(name){
+        const u = new URL(location.href);
+        return u.searchParams.get(name);
+      }
+
+      function gentlyValidateAddress(addr){
+        if (!addr) return false;
+        if (!BASE58_RE.test(addr)) return false;
+        if (addr.length < 35 || addr.length > 64) return false;
+        if (!/^5/.test(addr)) return false;
+        return true;
+      }
+
       // Fake submit (wire when /api/faucet exists)
       $('claimBtn').addEventListener('click', async () => {
         const addr = $('addr').value.trim();
         const msg = $('claimMsg');
         msg.className = 'mt-2 text-sm';
+        msg.textContent = '';
 
         if (!state.live) { msg.textContent = 'Not live yet.'; return; }
-        if (!addr)      { msg.textContent = 'Enter your SS58=73 address.'; return; }
+        if (!gentlyValidateAddress(addr)) { msg.textContent = 'Enter a valid SS58=73 address (Base58, starts with 5…).'; return; }
+        if (window.turnstile && !state.tsToken) { msg.textContent = 'Complete the human check.'; return; }
+
+        $('claimBtn').disabled = true;
 
         // When your backend is ready, POST here:
-        // const res = await fetch('/api/faucet', { method:'POST', headers:{'Content-Type':'application/json'},
-        //   body: JSON.stringify({ address: addr, turnstile: state.tsToken }) });
-        // const json = await res.json();
+        // try {
+        //   const res = await fetch('/api/faucet-claim', {
+        //     method:'POST',
+        //     headers:{'Content-Type':'application/json'},
+        //     body: JSON.stringify({ address: addr, proof: state.tsToken })
+        //   });
+        //   const json = await res.json();
+        //   if (!res.ok || !json?.ok) throw new Error(json?.message || 'Request failed');
+        //   msg.classList.add('text-emerald-300');
+        //   msg.textContent = 'Claim accepted. Check your wallet shortly.';
+        //   if (window.turnstile) window.turnstile.reset('#turnstile-container');
+        //   state.tsToken = null;
+        // } catch (e) {
+        //   msg.classList.add('text-red-300');
+        //   msg.textContent = String(e.message || e) || 'Request failed';
+        // } finally {
+        //   $('claimBtn').disabled = false;
+        // }
 
+        // Demo-only:
         msg.classList.add('text-zinc-300');
         msg.textContent = 'Claim submitted (demo). Backend wiring required.';
+        $('claimBtn').disabled = false;
+
+        // Remember address locally
+        try { localStorage.setItem('q_addr', addr); } catch {}
       });
 
-      // Boot
+      // Boot hydration
       hydrateConfig();
       hydrateMetrics();
-      setInterval(hydrateMetrics, 10000);
+      setInterval(hydrateMetrics, 10_000);
+
+      // Prefill from ?addr= and localStorage
+      const urlAddr = getParam('addr');
+      const savedAddr = (() => { try { return localStorage.getItem('q_addr') || ''; } catch { return ''; } })();
+      if (urlAddr) $('addr').value = urlAddr;
+      else if (savedAddr) $('addr').value = savedAddr;
+
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) updateCountdownOnce(); });
+      window.addEventListener('focus', updateCountdownOnce, { passive: true });
     })();
   </script>
 </body>
