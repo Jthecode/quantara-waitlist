@@ -24,3 +24,4 @@ node_modules
 .vercel
 node_modules
 .DS_Store
+public/scripts/*.map
